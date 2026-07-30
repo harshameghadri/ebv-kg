@@ -1,24 +1,10 @@
 import os
-import sys
+import pytest
+import numpy as np
 from unittest.mock import MagicMock, patch
 
-# Inject mock modules into sys.modules to prevent real torch/sentence_transformers
-# imports during testing, avoiding any local segmentation faults or GPU loading overhead.
-mock_torch = MagicMock()
-mock_torch.cuda.is_available.return_value = False
-mock_torch.backends.mps.is_available.return_value = False
-
-mock_st = MagicMock()
-mock_st_class = MagicMock()
-mock_st.SentenceTransformer = mock_st_class
-
-mock_fe = MagicMock()
-mock_fe_model = MagicMock()
-mock_fe.BGEM3FlagModel = mock_fe_model
-
-sys.modules['torch'] = mock_torch
-sys.modules['sentence_transformers'] = mock_st
-sys.modules['FlagEmbedding'] = mock_fe
+# Import the pre-injected global mock objects from conftest
+from tests.conftest import mock_torch, mock_st_class, mock_fe_model
 
 # Now import the client, which executes safely without importing real dependencies
 from app.retrieval.embeddings import EmbeddingClient

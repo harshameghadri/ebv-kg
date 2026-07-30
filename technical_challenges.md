@@ -72,3 +72,13 @@ This document logs significant technical challenges encountered during the devel
             similarity = 1.0 - distance
         ```
 *   **Git Commit**: `a9fb0db`
+
+---
+
+### Challenge 5: Pytest Mock Injection Collision and Test Isolation Leakage
+
+*   **Location**: `tests/test_embeddings.py` and `tests/test_hybrid.py`
+*   **Problem**: Both test modules injected custom mock objects into `sys.modules['torch']` and `sys.modules['sentence_transformers']` globally at import time to prevent downloading heavy model weights or device placement hangs. When pytest collected and ran the tests, the imports in `test_hybrid.py` ran after `test_embeddings.py`'s import-time setup, overwriting the global mocks in `sys.modules` with new instances. As a result, the methods in `EmbeddingClient` looked up the overwritten mocks and failed with assertions (e.g. CUDA device detection and mock method assertions failed due to mock leakage).
+*   **Solution**: Factored out global import-time monkeypatching into a shared `tests/conftest.py` file. This configures the `sys.modules` mocks exactly once globally before test collection. Modified both test files to import the shared mock objects (e.g. `mock_torch`, `mock_st`, `mock_fe_model`) from `conftest` rather than re-injecting them.
+*   **Git Commit**: `a9fb0db` (and subsequently `fc91d6b`)
+

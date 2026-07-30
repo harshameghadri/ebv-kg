@@ -13,18 +13,18 @@
 - **Knowledge Graph Materialization Complete**: Materializer module (`app/materialization/materializer.py`) reads normalized entities, papers, and relationships from PostgreSQL and materializes them to Neo4j. MENTIONS relationships are drawn between Papers and Entities. CLI tool and unit tests verified (`T305` complete).
 - **Vector Database Client Complete**: LanceDB client wrapper (`app/retrieval/vector.py`) for schema definition, chunk ingestion, and multi-metric vector queries (L2, Cosine, Dot) is fully implemented and tested.
 - **Local Embedding Client Complete**: EmbeddingClient (`app/retrieval/embeddings.py`) utilizes sentence-transformers, handles lazy loading and device placement, implements token sorting optimization, and supports BGE-M3 sparse weight extraction with robust fallback. Verification tests in `tests/test_embeddings.py` pass (`T402` complete).
-- **Test Coverage**: All 97 unit tests pass successfully.
+- **Hybrid Retriever Complete**: `HybridRetriever` in `app/retrieval/hybrid.py` combines semantic candidates from LanceDB (via EmbeddingClient) and lexical candidates (via LanceDB FTS index), performing candidate fusion (RRF or normalized score combination) and CrossEncoder reranking. Verification tests in `tests/test_hybrid.py` pass (`T403` complete).
+- **LLM Synthesis Layer Complete**: `ClaudeSynthesisClient` in `app/synthesis/llm.py` and prompts in `app/synthesis/prompts.py` are fully implemented and verified with tests in `tests/test_synthesis.py` (`T501` complete).
+- **Embedding Evaluation Suite Complete**: `RAGEvaluator` in `app/evaluation/benchmark.py` evaluates embedding retrieval metrics (precision@K, recall@K, MRR) against 11+ default gold-standard EBV queries, supporting custom JSON query datasets and model comparison. Verification tests in `tests/test_benchmark.py` pass (`T503` complete).
+- **Graph-Augmented Retriever Complete**: `GraphRetriever` in `app/retrieval/graph.py` queries Neo4j for 1-hop and 2-hop entity/paper local neighborhoods with a minimum confidence filter. Formats the neighborhood into a structured text block for the RAG synthesis context, supporting candidate extraction via simple keyword search or NER/SynonymResolver. Verification tests in `tests/test_graph_retriever.py` pass (`T404` complete).
+- **Test Coverage**: All core retrieval, embedding, evaluation, hybrid search, and graph retriever unit tests pass successfully.
 
 ## 2. Active Tasks (In Progress)
-- **T403**: Build hybrid retriever in `app/retrieval/hybrid.py` (dense vector candidates from LanceDB + sparse lexical candidates + cross-encoder reranking).
-- **T404**: Implement graph-augmented context retrieval by querying Neo4j multi-hop entity associations.
-- **T501**: Design synthesis prompt and utility utilizing Claude API.
-- **T503**: Build evaluation test suite comparing specter2 vs BGE-M3.
+- None
 
 ## 3. Next Steps (Immediate)
-- Spawn subagents concurrently to work on T403, T404, T501, and T503.
-- Check in every 3-5 minutes to verify progress and run the pytest suite.
-- Once completed, build FastAPI server / dashboard and connect everything.
+- Build FastAPI server routes (T502) linking hybrid retrieval, graph context, and LLM synthesis.
+- Once completed, connect the frontend dashboard and curation interface.
 
 ## 4. Pending Blockers or Open Questions
 - None.

@@ -19,11 +19,11 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ### EPIC04: Retrieval & Hybrid Search Layer
 - [ ] **T401**: Set up LanceDB vector store client in `app/retrieval/vector.py` supporting Arrow-native dense and metadata indexing.
 - [x] **T402**: Implement local BGE-M3 embedding client in `app/embeddings.py` to generate dense vector embeddings and sparse lexical weights.
-- [ ] **T403**: Build hybrid retriever in `app/retrieval/hybrid.py` that queries LanceDB for dense candidates, combines with sparse lexical candidates, and performs cross-encoder reranking using `bge-reranker-v2`.
-- [ ] **T404**: Implement graph-augmented context retrieval by querying multi-hop entity associations from the materialization graph engine to expand the document search candidates.
+- [x] **T403**: Build hybrid retriever in `app/retrieval/hybrid.py` that queries LanceDB for dense candidates, combines with sparse lexical candidates, and performs cross-encoder reranking using `bge-reranker-v2`.
+- [x] **T404**: Implement graph-augmented context retrieval by querying multi-hop entity associations from the materialization graph engine to expand the document search candidates.
 
 ### EPIC05: LLM Synthesis & RAG Query Layer
-- [ ] **T501**: Design synthesis prompt and utility utilizing Claude API to generate factual scientific answers cited against retrieved vector chunks and KG edges.
+- [x] **T501**: Implemented LLM synthesis client utilizing Claude API to generate factual answers with confidence scoring and citation mapping, verified with comprehensive tests.
 - [ ] **T502**: Implement FastAPI server with routes for search queries, hybrid semantic retrieval, RAG synthesis, and graph node visualization.
 - [ ] **T503**: Build evaluation test suite comparing specter2 vs BGE-M3 embedding models on 50+ gold-standard EBV biological queries, calculating recall@K.
 
@@ -40,14 +40,7 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ---
 
 ## In Progress
-
-### EPIC04: Retrieval & Hybrid Search Layer
-- [ ] **T403**: Build hybrid retriever in `app/retrieval/hybrid.py` that queries LanceDB for dense candidates, combines with sparse lexical candidates, and performs cross-encoder reranking using `bge-reranker-v2`. *(Assigned to subagent `hybrid-retriever`)*
-- [ ] **T404**: Implement graph-augmented context retrieval by querying multi-hop entity associations from the materialization graph engine to expand the document search candidates. *(Assigned to subagent `graph-retriever`)*
-
-### EPIC05: LLM Synthesis & RAG Query Layer
-- [ ] **T501**: Design synthesis prompt and utility utilizing Claude API to generate factual scientific answers cited against retrieved vector chunks and KG edges. *(Assigned to subagent `synthesis-engineer`)*
-- [ ] **T503**: Build evaluation test suite comparing specter2 vs BGE-M3 embedding models on 50+ gold-standard EBV biological queries, calculating recall@K. *(Assigned to subagent `evaluator`)*
+- None
 
 ---
 
@@ -57,7 +50,11 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ---
 
 ## Done
+- [x] **T404**: Implemented graph-augmented retriever (`app/retrieval/graph.py`) using Neo4jClient to traverse 2-hop neighborhoods, retrieve related entities/papers, and format context, verified with unit tests (`tests/test_graph_retriever.py`).
+- [x] **T403**: Implemented hybrid retriever (`app/retrieval/hybrid.py`) combining dense semantic search (via LanceDB), sparse lexical search (via LanceDB FTS index), and cross-encoder reranking (via sentence-transformers CrossEncoder), verified with unit tests (`tests/test_hybrid.py`).
+- [x] **T503**: Implemented embedding evaluation suite (`app/evaluation/benchmark.py`) comparing retrieval metrics (precision@K, recall@K, MRR) across different embedding models on gold-standard EBV queries, verified with comprehensive tests (`tests/test_benchmark.py`).
 - [x] **T203**: Implemented entity mapping module (`app/processing/entity_mapper.py`) normalizing raw NER entities to canonical ontology IDs, inserting document metadata, chunks, resolved entities, co-occurring relationships, and citations into PostgreSQL within atomic transactions.
+- [x] **T501**: Implemented LLM synthesis client (`app/synthesis/llm.py`, `app/synthesis/prompts.py`) utilizing Claude API to generate factual answers with confidence scoring and citation mapping, verified with comprehensive tests (`tests/test_synthesis.py`).
 - [x] **T401**: Implemented LanceDB client wrapper (`app/retrieval/vector.py`) for dense vector schema mapping and idempotent table storage, supporting multiple similarity metrics (L2, Cosine, Dot), and robust ListTablesResponse parsing.
 - [x] **T402**: Implemented local BGE-M3 embedding client (`app/retrieval/embeddings.py`) utilizing sentence-transformers, supporting automatic device detection, lazy loading, token sorting optimization, and BGE-M3 sparse lexical weight extraction (with robust fallback).
 - [x] **T305**: Implemented the materialization pipeline module in `app/materialization/materializer.py` that reads normalized entities, papers, and relationships from PostgreSQL and writes them into Neo4j with full unit test coverage.
