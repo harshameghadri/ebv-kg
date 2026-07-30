@@ -5,18 +5,12 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ## Backlog
 
 ### EPIC01: Ingestion Layer
-- [ ] **T102**: Implement Grobid PDF extractor client with fallback to PyMuPDF to extract text from scientific articles into standard JSON formats.
-- [ ] **T103**: Implement PubMed API scraper script that queries articles by search terms and downloads metadata and PMC XMLs to the staging directory.
-- [ ] **T104**: Implement GEO/SRA crawler script to download GSE metadata and series matrices into local staging JSONs.
 - [ ] **T105**: Build a CLI command to ingest and parse single-cell AnnData (`.h5ad`) files and export marker gene CSVs, cell type labels, and spatial coordinates into staging tables.
 
 ### EPIC02: Entity Normalization & NER Pipeline
-- [ ] **T201**: Set up SciSpacy and Bern2 API wrapper to run NER extraction on parsed plain text, outputting raw entities with confidence scores.
-- [ ] **T202**: Implement local dictionary-based synonym resolver for HGNC (genes), Cell Ontology (cells), DOID (diseases), UniProt (proteins), and UBERON (anatomy).
 - [ ] **T203**: Implement entity mapping module `app/entity_mapper.py` that normalizes raw NER entities to canonical ontology IDs with combined confidence scores.
 
 ### EPIC03: Knowledge Graph Materialization
-- [ ] **T301**: Define `GraphEngine` protocol in `app/materialization/graph_engine.py` with standard connection, schema initialization, and bulk-load Cypher methods.
 - [ ] **T302**: Implement `AgeEngine` using PostgreSQL AGE extension to execute graph operations inside PostgreSQL.
 - [ ] **T303**: Implement `LadybugEngine` to execute graph operations on the embedded LadybugDB/Kùzu engine.
 - [ ] **T304**: Build a graph engine benchmarking script to measure AGE vs LadybugDB write throughput and multi-hop read latency, outputting a comparative JSON report.
@@ -48,10 +42,18 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ## In Progress
 
 ### EPIC01: Ingestion Layer
-- [ ] **T101**: Implement PMC XML parser to extract clean plaintext, metadata, and references directly from JATS xml files. *(Assigned to Ingestion Engineer subagent)*
+- [ ] **T101**: Implement PMC XML parser to extract clean plaintext, metadata, and references directly from JATS xml files. *(Assigned to subagent `48f44395`)*
+- [ ] **T102**: Implement Grobid PDF extractor client with fallback to PyMuPDF to extract text from scientific articles into standard JSON formats. *(Assigned to subagent `c1abb4cb`)*
+- [ ] **T103**: Implement PubMed API scraper script that queries articles by search terms and downloads metadata and PMC XMLs to the staging directory. *(Assigned to subagent `b8a3f8d6`)*
+- [ ] **T104**: Implement GEO/SRA crawler script to download GSE metadata and series matrices into local staging JSONs. *(Assigned to subagent `357902df`)*
 
 ### EPIC02: Entity Normalization & NER Pipeline
-- [ ] **T204**: Create PostgreSQL database schema defining raw source data, parsed document chunks, extracted entities, and curation tables. *(Assigned to Database Architect subagent)*
+- [ ] **T201**: Set up SciSpacy and Bern2 API wrapper to run NER extraction on parsed plain text, outputting raw entities with confidence scores. *(Assigned to subagent `e022028f`)*
+- [ ] **T202**: Implement local dictionary-based synonym resolver for HGNC (genes), Cell Ontology (cells), DOID (diseases), UniProt (proteins), and UBERON (anatomy). *(Assigned to subagent `2687837a`)*
+- [ ] **T204**: Create PostgreSQL database schema defining raw source data, parsed document chunks, extracted entities, and curation tables. *(Assigned to subagent `e2d90e41`)*
+
+### EPIC03: Knowledge Graph Materialization
+- [ ] **T301**: Implement the Neo4j Graph database client wrapper, supporting connection lifecycle, unique constraints creation, graph clearing, and parameterized Cypher node/edge bulk writes. *(Assigned to subagent `1ccc34ae`)*
 
 ---
 
