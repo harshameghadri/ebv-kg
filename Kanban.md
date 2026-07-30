@@ -41,17 +41,17 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ---
 
 ## To Do
-
-### EPIC01: Ingestion Layer
-- [ ] **T101**: Implement PMC XML parser to extract clean plaintext, metadata, and references directly from JATS xml files.
-
-### EPIC02: Entity Normalization & NER Pipeline
-- [ ] **T204**: Create PostgreSQL database schema defining raw source data, parsed document chunks, extracted entities, and curation tables.
+- None
 
 ---
 
 ## In Progress
-- None
+
+### EPIC01: Ingestion Layer
+- [ ] **T101**: Implement PMC XML parser to extract clean plaintext, metadata, and references directly from JATS xml files. *(Assigned to Ingestion Engineer subagent)*
+
+### EPIC02: Entity Normalization & NER Pipeline
+- [ ] **T204**: Create PostgreSQL database schema defining raw source data, parsed document chunks, extracted entities, and curation tables. *(Assigned to Database Architect subagent)*
 
 ---
 
