@@ -5,7 +5,6 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ## Backlog
 
 ### EPIC01: Ingestion Layer
-- [ ] **T101**: Implement PMC XML parser to extract clean plaintext, metadata, and references directly from JATS xml files.
 - [ ] **T102**: Implement Grobid PDF extractor client with fallback to PyMuPDF to extract text from scientific articles into standard JSON formats.
 - [ ] **T103**: Implement PubMed API scraper script that queries articles by search terms and downloads metadata and PMC XMLs to the staging directory.
 - [ ] **T104**: Implement GEO/SRA crawler script to download GSE metadata and series matrices into local staging JSONs.
@@ -15,7 +14,6 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 - [ ] **T201**: Set up SciSpacy and Bern2 API wrapper to run NER extraction on parsed plain text, outputting raw entities with confidence scores.
 - [ ] **T202**: Implement local dictionary-based synonym resolver for HGNC (genes), Cell Ontology (cells), DOID (diseases), UniProt (proteins), and UBERON (anatomy).
 - [ ] **T203**: Implement entity mapping module `app/entity_mapper.py` that normalizes raw NER entities to canonical ontology IDs with combined confidence scores.
-- [ ] **T204**: Create PostgreSQL database schema defining raw source data, parsed document chunks, extracted entities, and curation tables.
 
 ### EPIC03: Knowledge Graph Materialization
 - [ ] **T301**: Define `GraphEngine` protocol in `app/materialization/graph_engine.py` with standard connection, schema initialization, and bulk-load Cypher methods.
@@ -44,14 +42,16 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 
 ## To Do
 
-### EPIC07: Documentation & Spec Gaps
-- [ ] **T701**: Draft the detailed "Storage & Database Strategy" in `ebv-rag-engineering-spec.md` to specify the schema designs, indexes, and synchronization boundaries.
-- [ ] **T702**: Write the missing "Scaling & Performance", "Security & Data Governance", "Monitoring & Observability", and "Risk & Mitigation" sections in `ebv-rag-engineering-spec.md`.
+### EPIC01: Ingestion Layer
+- [ ] **T101**: Implement PMC XML parser to extract clean plaintext, metadata, and references directly from JATS xml files.
+
+### EPIC02: Entity Normalization & NER Pipeline
+- [ ] **T204**: Create PostgreSQL database schema defining raw source data, parsed document chunks, extracted entities, and curation tables.
 
 ---
 
 ## In Progress
-- [ ] **T001**: Architecture design alignment and agile documentation setup.
+- None
 
 ---
 
@@ -62,3 +62,6 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 
 ## Done
 - **T000**: Project agile initialization (setup of Kanban, Handover, Behavior guidelines, and Gemini documentation).
+- **T001**: Architecture design alignment and agile documentation setup.
+- **T701**: Drafted the detailed "Storage & Database Strategy" in `ebv-rag-engineering-spec.md` specifying relational schemas, vector indexes, and graph rebuild boundaries.
+- **T702**: Completed missing "Scaling & Performance", "Security & Data Governance", "Monitoring & Observability", and "Risk & Mitigation" sections in `ebv-rag-engineering-spec.md`.

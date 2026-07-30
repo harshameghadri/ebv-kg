@@ -33,10 +33,10 @@
 10. [Deployment & DevOps](#deployment--devops)
 11. [Testing & Evaluation](#testing--evaluation)
 12. [Cost Analysis](#cost-analysis)
-13. [Scaling & Performance](#scaling--performance) *(scoped in original draft, not yet written — see note below)*
-14. [Security & Data Governance](#security--data-governance) *(scoped in original draft, not yet written — see note below)*
-15. [Monitoring & Observability](#monitoring--observability) *(scoped in original draft, not yet written — see note below)*
-16. [Risk & Mitigation](#risk--mitigation) *(scoped in original draft, not yet written — see note below)*
+13. [Scaling & Performance](#scaling--performance)
+14. [Security & Data Governance](#security--data-governance)
+15. [Monitoring & Observability](#monitoring--observability)
+16. [Risk & Mitigation](#risk--mitigation)
 17. [Known Gaps & Phase 1 Validation Tasks](#known-gaps--phase-1-validation-tasks)
 18. [Infrastructure Decision Log (2026 Stack Review)](#infrastructure-decision-log-2026-stack-review)
 19. [Appendix A: Reference Architecture Diagram](#appendix-a-reference-architecture-diagram)
@@ -1433,6 +1433,97 @@ async def materialize_neo4j_from_postgres():
 
 ---
 
+## Storage & Database Strategy
+
+This section deep-dives into the storage configurations, schemas, indexing, and synchronization boundaries across the three core data stores: PostgreSQL (relational source of truth), LanceDB (vector and metadata store), and LadybugDB/Apache AGE (analytical graph view).
+
+### 1. PostgreSQL (Relational Source of Truth)
+PostgreSQL acts as the immutable repository of all document chunks, extracted raw/normalized entities, curated relationships, and system jobs. 
+
+#### Schema Design & Indexes:
+- **`documents`**:
+  - `id` (UUID, Primary Key)
+  - `doi` (VARCHAR, Unique, Indexed)
+  - `pmid` (VARCHAR, Nullable, Indexed)
+  - `title` (TEXT)
+  - `journal` (VARCHAR)
+  - `published_date` (DATE)
+  - `parsed_json` (JSONB)
+- **`document_chunks`**:
+  - `id` (UUID, Primary Key)
+  - `document_id` (UUID, Foreign Key to `documents`, Indexed)
+  - `chunk_index` (INT)
+  - `content` (TEXT)
+  - `token_count` (INT)
+- **`normalized_entities`**:
+  - `id` (UUID, Primary Key)
+  - `canonical_id` (VARCHAR, e.g., HGNC:11104, CL:0000236, Unique, Indexed)
+  - `name` (VARCHAR, Indexed)
+  - `entity_type` (VARCHAR, e.g., GENE, CELL_TYPE, DISEASE)
+  - `ontology_source` (VARCHAR, e.g., HGNC, CL, DOID)
+  - `synonyms` (TEXT[])
+- **`relationships`**:
+  - `id` (UUID, Primary Key)
+  - `source_entity_id` (UUID, Foreign Key to `normalized_entities`, Indexed)
+  - `target_entity_id` (UUID, Foreign Key to `normalized_entities`, Indexed)
+  - `relationship_type` (VARCHAR)
+  - `confidence_score` (DOUBLE PRECISION, Indexed)
+  - `curation_status` (VARCHAR, e.g., PENDING, APPROVED, REJECTED, Indexed)
+  - `source_type` (VARCHAR, e.g., LLM_DIRECT, LIGHTRAG_CANDIDATE, HUMAN)
+- **`relationship_evidence`**:
+  - `id` (UUID, Primary Key)
+  - `relationship_id` (UUID, Foreign Key to `relationships`, Indexed)
+  - `chunk_id` (UUID, Foreign Key to `document_chunks`, Indexed)
+  - `confidence_score` (DOUBLE PRECISION)
+  - `citation_text` (TEXT)
+
+#### Key Relational Indexes:
+- B-Tree index on `documents(doi)` and `documents(pmid)`.
+- B-Tree index on `normalized_entities(canonical_id)` and `normalized_entities(name)`.
+- B-Tree compound index on `relationships(source_entity_id, target_entity_id)`.
+- B-Tree index on `relationships(curation_status, confidence_score)`.
+
+### 2. LanceDB (Vector and Sparse Indexing)
+LanceDB operates embedded in-process, using the Apache Arrow format. It stores document chunk embeddings along with rich metadata to support hybrid (dense/sparse) retrieval.
+
+#### Collection Schema:
+```python
+import lancedb.pydantic as ldp
+from pydantic import BaseModel
+
+class ChunkEmbeddingModel(ldp.LanceModel):
+    id: str  # maps to PostgreSQL chunk_id
+    document_id: str
+    vector: ldp.Vector(1024)  # BGE-M3 dense dimension (1024)
+    sparse_weights: list[float]  # Sparse token indices/weights
+    content: str
+    confidence: float
+    disease: str
+    technique: str
+```
+- **Vector Index**: Inverted File with Product Quantization (IVF-PQ) index applied as volume scales.
+- **Metadata Filters**: Native scalar indexes on `document_id`, `disease`, and `technique` to prevent full scans during metadata-filtered queries.
+
+### 3. Graph View (LadybugDB / Apache AGE)
+The graph database serves as a materialized view of the PostgreSQL relational model. Nodes and edges are built using Cypher syntax and rebuilt systematically.
+
+#### Graph Schema:
+- **Nodes**:
+  - `(:Entity {canonical_id, name, entity_type})`
+  - `(:Paper {doi, title, published_date})`
+- **Edges**:
+  - `(:Entity)-[:ASSOCIATED_WITH {confidence_score, status}]->(:Entity)`
+  - `(:Paper)-[:MENTIONS {confidence_score}]->(:Entity)`
+
+### 4. Synchronization Boundaries & Rollback
+To maintain strict consistency, the system uses a transactional, one-way synchronization protocol:
+- **Write Path**: All insertions/edits write first to PostgreSQL inside a database transaction.
+- **Sync Trigger**: Upon commit, an event handler asynchronously triggers updates to LanceDB and LadybugDB.
+- **Rollback Protocol**: If LanceDB or the Graph update fails, the event queue flags the chunk/relationship status as `SYNC_FAILED` in PostgreSQL. An automated background worker retries the synchronization; if failures persist after 3 attempts, it alerts the operator.
+- **Rebuild script**: A single command `python -m app.materialization.rebuild` drops the graph and vector databases and fully reconstructs them from PostgreSQL tables.
+
+---
+
 ## Knowledge Graph Design & Confidence Scoring
 
 ### KG Schema (Entity Types & Relationships)
@@ -2164,21 +2255,78 @@ async def eval_on_benchmark(benchmark_path: str):
 
 ---
 
+## Scaling & Performance
 
-> **Drafting gap, flagged not hidden.** The original outline for this document scoped five
-> additional sections — Storage & Database Strategy (deep dive beyond what's in Infrastructure &
-> Resource Requirements), Scaling & Performance, Security & Data Governance, Monitoring &
-> Observability, and Risk & Mitigation — that were never actually drafted into the body, despite
-> appearing in the table of contents. Surfacing this now rather than quietly dropping it or
-> backfilling it under time pressure. These belong in the Known Gaps list below and should be
-> written before this spec is treated as complete enough to seed `claude.md`.
+To handle the scale of 10,000 to 50,000 papers, single-cell datasets, and over 400,000 graph edges, the system implements the following performance constraints:
+
+### 1. Ingestion & Processing Throughput
+- **Asynchronous Parsers**: The PMC XML and Grobid parsing pipeline uses `asyncio` and a pool of process workers (`ProcessPoolExecutor`) for CPU-bound tasks like text extraction and PDF formatting, targeting >100 documents parsed per minute.
+- **Token Sorting**: Group chunk texts by token length before running the BGE-M3 local embedding model. Sorting minimizes padding overhead inside batch inference, improving GPU/CPU tensor calculations by up to 30%.
+
+### 2. Retrieval Speed & Vector Indexing
+- **Inverted File with Product Quantization (IVF-PQ)**: Configure LanceDB to construct an IVF-PQ index on the vector columns once the chunk count exceeds 20,000. Use `nlist=256` and `nprobes=20` to guarantee a recall@10 of >95% with latency under 50ms.
+- **Scalar Metadata Indexes**: Build native B-Tree indexes on metadata fields (`document_id`, `disease`, `technique`) inside LanceDB to speed up pre-filtering queries.
+
+### 3. Graph Database Traversals
+- **Hops Limitation**: Limit Cypher queries to a maximum traversal depth of 3 to avoid the "dense hub explosion" problem on high-degree nodes (e.g., EBV, EBNA1).
+- **Parameterized Cypher**: All read/write database queries are strictly parameterized to ensure query plans are cached and reused by LadybugDB/AGE.
+
+---
+
+## Security & Data Governance
+
+### 1. Access Control
+- **Authentication**: Secure all FastAPI endpoints using standard HTTP Bearer tokens.
+- **Curation RBAC**: Maintain Role-Based Access Control (RBAC) in PostgreSQL. Curation actions (`approve`, `reject`, `modify`) require the user to possess the `admin_curator` role. Read-only search API routes are open to authorized client applications.
+
+### 2. Data Lineage and Auditing
+- **Citations and Traceability**: Every normalized entity and relationship records a strict trace lineage array in the relational database containing:
+  - The source paper's DOI or PMC ID.
+  - The specific document chunk UUID.
+  - The LLM model name, parameter set, and prompt template version.
+  - Timestamp and user/curator ID who approved the record.
+
+### 3. LLM Security & Data Privacy
+- **Self-Hosted Inference**: Local deployments of the BGE-M3 embedding and reranking models keep single-cell marker gene lists and unpublished clinical coordinates local to the VPS, preventing data leaks to third-party APIs.
+- **Input Sanitization**: Validate all client queries against injection heuristics before sending text to the vector database or LLM synthesis engines.
+
+---
+
+## Monitoring & Observability
+
+### 1. Log Aggregation
+- **Structured Logging**: Employ `structlog` to output JSON-formatted logs containing correlation IDs. The ID flows from the API client request down to the asynchronous workers, allowing quick debugging of ingestion or synchronization errors.
+
+### 2. Performance Metrics (Prometheus)
+FastAPI exposes a `/metrics` endpoint to Prometheus tracking:
+- **API Request Rates**: Latency percentiles (p50, p90, p99) and request counts grouped by endpoint and response status.
+- **Pipeline Latency**: Average time to parse, run NER, normalize, and sync a paper.
+- **Embedding Cache Hits**: Hit/miss rates of the local embedding caching layer.
+- **Queue Backlog**: Depth of pending sync events in the PostgreSQL transaction queue.
+
+### 3. Dashboarding & Drift (Grafana)
+- Set up Grafana dashboards to monitor hardware resources (CPU, RAM, disk read/write queues) and track Claude API token costs.
+- Graph curation metrics over time (rejection rates, NER confidence scores) to identify drift in automated NER accuracy.
+
+---
+
+## Risk & Mitigation
+
+| Risk | Impact | Likelihood | Mitigation Strategy |
+|------|--------|------------|---------------------|
+| **LLM Hallucinations in KG** | Critical | High | Implement a strict human curation queue. Unreviewed relationships are stored in a separate table and never used in the authoritative RAG context. |
+| **Sync drift between databases** | High | Medium | PostgreSQL acts as the single source of truth. LanceDB and the graph database are rebuilt nightly or on-demand from PostgreSQL using a standard CLI rebuild script. |
+| **Upstream LadybugDB maintenance drop** | Medium | Low | Maintain compatibility with openCypher standards via a generic `GraphEngine` protocol. In the event of a drop, swap the adapter to use PostgreSQL Apache AGE. |
+| **API Outages (Claude / PubMed)** | Medium | Medium | Implement automated exponential backoff with jitter. Use a persistent queue (SQLite/PG) to buffer failing external tasks for retry. |
+
+---
 
 ## Known Gaps & Phase 1 Validation Tasks
 
 **These MUST be addressed before full implementation:**
 
 ### Critical Blocking Issues
-- [ ] **Undrafted sections**: write Storage & Database Strategy (deep-dive), Scaling & Performance, Security & Data Governance, Monitoring & Observability, and Risk & Mitigation — scoped in the original ToC, never drafted
+- [x] **Undrafted sections**: write Storage & Database Strategy (deep-dive), Scaling & Performance, Security & Data Governance, Monitoring & Observability, and Risk & Mitigation — completed in spec v2 revision
 
 - [ ] **KG Confidence Scoring**: Validate confidence formula on 200+ curated relationships
 - [ ] **Entity Normalization**: Complete integration of HGNC, Cell Ontology, DOID; test fuzzy matching

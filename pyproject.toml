@@ -1,0 +1,47 @@
+[project]
+name = "ebv-kg"
+version = "0.1.0"
+description = "Epstein-Barr Virus (EBV) Knowledge System - RAG and Knowledge Graph"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+    "polars>=0.20.0",
+    "pyarrow>=16.0.0",
+    "lancedb>=0.7.0",
+    "psycopg[binary]>=3.1.19",
+    "anthropic>=0.28.0",
+    "sentence-transformers>=3.0.0",
+    "pymupdf>=1.24.5",
+    "anndata>=0.10.7",
+    "requests>=2.32.3",
+    "beautifulsoup4>=4.12.3",
+    "lxml>=5.2.2",
+    "pydantic>=2.7.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2.0",
+    "ruff>=0.4.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "C4"]
+ignore = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
