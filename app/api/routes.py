@@ -1,0 +1,499 @@
+"""FastAPI router defining REST API endpoints for the EBV Knowledge System."""
+
+import os
+import psycopg
+import time
+import logging
+from uuid import UUID
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional
+from psycopg.rows import dict_row
+
+from app.retrieval.vector import LanceDBClient
+from app.retrieval.hybrid import HybridRetriever
+from app.retrieval.graph import GraphRetriever
+from app.materialization.neo4j_client import Neo4jClient
+from app.synthesis.llm import ClaudeSynthesisClient
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+# --- Pydantic Schemas ---
+
+class QueryRequest(BaseModel):
+    query: str
+    top_k: int = 5
+    search_type: str = "hybrid"
+    include_citations: bool = True
+
+class RagResponse(BaseModel):
+    query: str
+    answer: str
+    confidence: float
+    retrieved_documents: List[Dict[str, Any]]
+    citations: List[Dict[str, Any]]
+    generation_time_s: float
+
+class CurationActionRequest(BaseModel):
+    relationship_id: str
+    action: str  # 'APPROVE' or 'REJECT'
+
+# --- Lazy Client Registry ---
+
+class ClientRegistry:
+    """Registry for lazy-initializing databases, retrievers, and LLM clients."""
+
+    def __init__(self) -> None:
+        self._lancedb_client: Optional[LanceDBClient] = None
+        self._neo4j_client: Optional[Neo4jClient] = None
+        self._hybrid_retriever: Optional[HybridRetriever] = None
+        self._graph_retriever: Optional[GraphRetriever] = None
+        self._claude_client: Optional[ClaudeSynthesisClient] = None
+
+    def get_lancedb_client(self) -> LanceDBClient:
+        if self._lancedb_client is None:
+            self._lancedb_client = LanceDBClient()
+        return self._lancedb_client
+
+    def get_neo4j_client(self) -> Neo4jClient:
+        if self._neo4j_client is None:
+            self._neo4j_client = Neo4jClient()
+        return self._neo4j_client
+
+    def get_hybrid_retriever(self) -> HybridRetriever:
+        if self._hybrid_retriever is None:
+            self._hybrid_retriever = HybridRetriever(
+                vector_client=self.get_lancedb_client()
+            )
+        return self._hybrid_retriever
+
+    def get_graph_retriever(self) -> GraphRetriever:
+        if self._graph_retriever is None:
+            self._graph_retriever = GraphRetriever(
+                neo4j_client=self.get_neo4j_client()
+            )
+        return self._graph_retriever
+
+    def get_claude_client(self) -> ClaudeSynthesisClient:
+        if self._claude_client is None:
+            self._claude_client = ClaudeSynthesisClient()
+        return self._claude_client
+
+_registry = ClientRegistry()
+
+# --- Dependencies ---
+
+def get_pg_conn():
+    """FastAPI Dependency for lazy, pooled PostgreSQL connection."""
+    pg_dsn = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DSN")
+    if not pg_dsn:
+        raise ValueError("DATABASE_URL or POSTGRES_DSN environment variable must be set.")
+    conn = psycopg.connect(pg_dsn)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+def get_hybrid_retriever() -> HybridRetriever:
+    return _registry.get_hybrid_retriever()
+
+def get_graph_retriever() -> GraphRetriever:
+    return _registry.get_graph_retriever()
+
+def get_claude_client() -> ClaudeSynthesisClient:
+    return _registry.get_claude_client()
+
+def get_neo4j_client() -> Neo4jClient:
+    return _registry.get_neo4j_client()
+
+# --- Routes ---
+
+@router.post("/query/hybrid", response_model=RagResponse)
+async def query_hybrid(
+    req: QueryRequest,
+    hybrid_retriever: HybridRetriever = Depends(get_hybrid_retriever),
+    graph_retriever: GraphRetriever = Depends(get_graph_retriever),
+    claude_client: ClaudeSynthesisClient = Depends(get_claude_client),
+):
+    """Executes a hybrid RAG query combining semantic text chunks with knowledge graph context."""
+    start_time = time.time()
+    
+    # 1. Retrieve document chunks
+    try:
+        chunks = hybrid_retriever.retrieve(query=req.query, top_k=req.top_k)
+    except Exception as e:
+        logger.warning("Hybrid retrieval failed: %s", e)
+        chunks = []
+        
+    # 2. Retrieve graph context
+    try:
+        graph_context = graph_retriever.retrieve_graph_context(query=req.query)
+    except Exception as e:
+        logger.warning("Graph context retrieval failed: %s", e)
+        graph_context = ""
+        
+    # 3. Synthesize cited answer using Claude
+    try:
+        synthesis_result = claude_client.synthesize(
+            query=req.query,
+            retrieved_chunks=chunks,
+            graph_context=graph_context,
+        )
+        answer = synthesis_result.get("answer", "I do not know")
+        confidence = synthesis_result.get("confidence", 0.0)
+        citations = synthesis_result.get("citations", []) if req.include_citations else []
+    except Exception as e:
+        logger.error("Claude synthesis execution failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"LLM synthesis failed: {str(e)}")
+        
+    elapsed = time.time() - start_time
+    
+    return RagResponse(
+        query=req.query,
+        answer=answer,
+        confidence=confidence,
+        retrieved_documents=chunks,
+        citations=citations,
+        generation_time_s=elapsed,
+    )
+
+@router.get("/graph/explore/{entity_id}")
+async def explore_graph(
+    entity_id: str,
+    graph_retriever: GraphRetriever = Depends(get_graph_retriever),
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client),
+):
+    """Traverse 1-hop and 2-hop neighborhoods in Neo4j for a given entity symbol, name or canonical ID."""
+    # Try resolving entity_id as canonical ID or name
+    cypher_check = "MATCH (e:Entity) WHERE e.canonical_id = $eid OR toLower(e.name) = toLower($eid) RETURN DISTINCT e.canonical_id AS canonical_id"
+    try:
+        res = neo4j_client.execute_query(cypher_check, {"eid": entity_id})
+        cids = [
+            r.get("canonical_id") if hasattr(r, "get") else dict(r).get("canonical_id")
+            for r in res
+        ]
+        cids = list(set([cid for cid in cids if cid]))
+    except Exception as e:
+        logger.warning("Error checking entity symbol in Neo4j: %s", e)
+        cids = []
+        
+    if not cids:
+        # Fallback to synonym resolver / simple name matching
+        try:
+            cids = graph_retriever._find_entities_by_name(entity_id)
+        except Exception:
+            cids = []
+            
+    if not cids:
+        # Fallback to querying with the literal input symbol
+        cids = [entity_id]
+        
+    try:
+        neighborhood = graph_retriever.get_neighborhood(cids)
+    except Exception as e:
+        logger.error("Failed to query Neo4j graph neighborhood: %s", e)
+        return {"nodes": [], "relationships": []}
+        
+    # Process entity and paper nodes
+    nodes = []
+    seen_nodes = set()
+    
+    for ent in neighborhood.get("entities", []):
+        cid = ent["canonical_id"]
+        if cid not in seen_nodes:
+            seen_nodes.add(cid)
+            nodes.append({
+                "id": cid,
+                "label": "Entity",
+                "name": ent["name"],
+                "entity_type": ent["entity_type"],
+            })
+            
+    for paper in neighborhood.get("papers", []):
+        doi = paper["doi"]
+        if doi not in seen_nodes:
+            seen_nodes.add(doi)
+            nodes.append({
+                "id": doi,
+                "label": "Paper",
+                "title": paper["title"],
+                "pmid": paper.get("pmid"),
+                "journal": paper.get("journal"),
+                "published_date": str(paper.get("published_date")) if paper.get("published_date") else None,
+            })
+            
+    # Process relationships with confidence > 0.70
+    relationships = []
+    for rel in neighborhood.get("relationships", []):
+        conf = rel.get("confidence_score")
+        if conf is not None and conf > 0.70:
+            relationships.append({
+                "id": str(rel.get("id")) if rel.get("id") else None,
+                "source": rel["source_id"],
+                "target": rel["target_id"],
+                "type": rel["rel_type"],
+                "confidence_score": conf,
+                "curation_status": rel.get("curation_status"),
+            })
+            
+    for m in neighborhood.get("mentions", []):
+        conf = m.get("confidence_score")
+        if conf is not None and conf > 0.70:
+            relationships.append({
+                "source": m["paper_doi"],
+                "target": m["entity_id"],
+                "type": "MENTIONS",
+                "confidence_score": conf,
+            })
+            
+    return {
+        "nodes": nodes,
+        "relationships": relationships
+    }
+
+@router.get("/curation/pending")
+async def curation_pending(conn = Depends(get_pg_conn)):
+    """Fetch all pending relationships from PostgreSQL with associated entity names and citation text."""
+    query = """
+    SELECT 
+        r.id AS relationship_id,
+        src.canonical_id AS source_canonical_id,
+        src.name AS source_name,
+        tgt.canonical_id AS target_canonical_id,
+        tgt.name AS target_name,
+        r.relationship_type,
+        r.confidence_score,
+        re.citation_text
+    FROM relationships r
+    JOIN normalized_entities src ON r.source_entity_id = src.id
+    JOIN normalized_entities tgt ON r.target_entity_id = tgt.id
+    LEFT JOIN relationship_evidence re ON r.id = re.relationship_id
+    WHERE r.curation_status = 'PENDING'
+    """
+    try:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(query)
+            rows = cur.fetchall()
+    except Exception as e:
+        logger.error("Failed to query pending relationships: %s", e)
+        raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+        
+    results = []
+    for row in rows:
+        results.append({
+            "relationship_id": str(row["relationship_id"]),
+            "source_canonical_id": row["source_canonical_id"],
+            "source_name": row["source_name"],
+            "target_canonical_id": row["target_canonical_id"],
+            "target_name": row["target_name"],
+            "relationship_type": row["relationship_type"],
+            "confidence_score": row["confidence_score"],
+            "citation_text": row["citation_text"],
+        })
+    return results
+
+@router.post("/curation/action")
+async def curation_action(
+    req: CurationActionRequest,
+    conn = Depends(get_pg_conn),
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client),
+):
+    """Approve or Reject a pending relationship in PostgreSQL, and sync to Neo4j if approved."""
+    action = req.action.upper()
+    if action not in ("APPROVE", "REJECT"):
+        raise HTTPException(status_code=400, detail="Action must be either 'APPROVE' or 'REJECT'")
+        
+    status_map = {
+        "APPROVE": "APPROVED",
+        "REJECT": "REJECTED"
+    }
+    new_status = status_map[action]
+    
+    # 1. Update PostgreSQL within transaction block
+    try:
+        with conn.transaction():
+            with conn.cursor(row_factory=dict_row) as cur:
+                # Retrieve relation to verify it exists and get identifiers
+                cur.execute(
+                    "SELECT source_entity_id, target_entity_id, relationship_type, confidence_score, source_type FROM relationships WHERE id = %s",
+                    (req.relationship_id,)
+                )
+                rel_row = cur.fetchone()
+                if not rel_row:
+                    raise HTTPException(status_code=404, detail="Relationship not found")
+                    
+                cur.execute(
+                    "UPDATE relationships SET curation_status = %s WHERE id = %s",
+                    (new_status, req.relationship_id)
+                )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed database transaction for curation action: %s", e)
+        raise HTTPException(status_code=500, detail=f"PostgreSQL update transaction failed: {str(e)}")
+        
+    # 2. If APPROVED, materialize nodes and edges into Neo4j
+    if new_status == "APPROVED":
+        try:
+            with conn.cursor(row_factory=dict_row) as cur:
+                # Fetch full source entity details
+                cur.execute(
+                    "SELECT id, canonical_id, name, entity_type, ontology_source, synonyms FROM normalized_entities WHERE id = %s",
+                    (rel_row["source_entity_id"],)
+                )
+                src_ent = cur.fetchone()
+                
+                # Fetch full target entity details
+                cur.execute(
+                    "SELECT id, canonical_id, name, entity_type, ontology_source, synonyms FROM normalized_entities WHERE id = %s",
+                    (rel_row["target_entity_id"],)
+                )
+                tgt_ent = cur.fetchone()
+                
+            if not src_ent or not tgt_ent:
+                raise HTTPException(status_code=500, detail="Associated source or target entity not found.")
+                
+            # Upsert Entity nodes to Neo4j
+            entity_nodes = []
+            for ent in (src_ent, tgt_ent):
+                entity_nodes.append({
+                    "id": str(ent["id"]),
+                    "canonical_id": ent["canonical_id"],
+                    "name": ent["name"],
+                    "entity_type": ent["entity_type"],
+                    "ontology_source": ent["ontology_source"],
+                    "synonyms": ent["synonyms"] if ent["synonyms"] is not None else [],
+                })
+                
+            neo4j_client.bulk_upsert_nodes(
+                label="Entity",
+                nodes=entity_nodes,
+                id_property="canonical_id"
+            )
+            
+            # Upsert the Relationship edge to Neo4j
+            edge_dict = {
+                "id": str(req.relationship_id),
+                "source_canonical_id": src_ent["canonical_id"],
+                "target_canonical_id": tgt_ent["canonical_id"],
+                "confidence_score": rel_row["confidence_score"],
+                "curation_status": new_status,
+                "source_type": rel_row["source_type"],
+            }
+            neo4j_client.bulk_upsert_edges(
+                rel_type=rel_row["relationship_type"],
+                edges=[edge_dict],
+                source_label="Entity",
+                target_label="Entity",
+                source_key="canonical_id",
+                target_key="canonical_id"
+            )
+            
+            # Fetch and draw 'MENTIONS' edges between associated papers and these entities
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(
+                    """SELECT d.doi AS source_doi, ent.canonical_id AS target_canonical_id, 
+                           MAX(ev.confidence_score) AS confidence_score 
+                    FROM documents d 
+                    JOIN document_chunks c ON d.id = c.document_id 
+                    JOIN relationship_evidence ev ON c.id = ev.chunk_id 
+                    JOIN relationships r ON ev.relationship_id = r.id 
+                    JOIN normalized_entities ent ON 
+                      (ent.id = r.source_entity_id OR ent.id = r.target_entity_id) 
+                    WHERE r.id = %s 
+                    GROUP BY d.doi, ent.canonical_id""",
+                    (req.relationship_id,)
+                )
+                mentions = cur.fetchall()
+                
+            if mentions:
+                # Upsert associated Paper nodes to Neo4j first
+                dois = list(set([m["source_doi"] for m in mentions if m["source_doi"]]))
+                if dois:
+                    with conn.cursor(row_factory=dict_row) as cur:
+                        cur.execute(
+                            "SELECT id, doi, pmid, title, journal, published_date FROM documents WHERE doi = ANY(%s)",
+                            (dois,)
+                        )
+                        papers = cur.fetchall()
+                    if papers:
+                        paper_nodes = []
+                        for p in papers:
+                            paper_nodes.append({
+                                "id": str(p["id"]),
+                                "doi": p["doi"],
+                                "pmid": p["pmid"],
+                                "title": p["title"],
+                                "journal": p["journal"],
+                                "published_date": p["published_date"].isoformat() if p["published_date"] else None,
+                            })
+                        neo4j_client.bulk_upsert_nodes(
+                            label="Paper",
+                            nodes=paper_nodes,
+                            id_property="doi"
+                        )
+                
+                # Draw 'MENTIONS' edges in Neo4j
+                mentions_edges = []
+                for row in mentions:
+                    if not row["source_doi"] or not row["target_canonical_id"]:
+                        continue
+                    mentions_edges.append({
+                        "source_doi": row["source_doi"],
+                        "target_canonical_id": row["target_canonical_id"],
+                        "confidence_score": row["confidence_score"]
+                    })
+                if mentions_edges:
+                    neo4j_client.bulk_upsert_edges(
+                        rel_type="MENTIONS",
+                        edges=mentions_edges,
+                        source_label="Paper",
+                        target_label="Entity",
+                        source_key="doi",
+                        target_key="canonical_id"
+                    )
+        except Exception as e:
+            logger.error("Neo4j immediate materialization failed: %s", e)
+            raise HTTPException(
+                status_code=500,
+                detail=f"PostgreSQL update succeeded but Neo4j materialization failed: {str(e)}"
+            )
+            
+    return {"status": "success", "curation_status": new_status}
+
+@router.get("/admin/curation-status")
+async def admin_curation_status(conn = Depends(get_pg_conn)):
+    """Fetch aggregated statistics (approved, pending, rejected) for relationships in PostgreSQL."""
+    query = """
+    SELECT curation_status, COUNT(*) as count
+    FROM relationships
+    GROUP BY curation_status
+    """
+    try:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(query)
+            rows = cur.fetchall()
+    except Exception as e:
+        logger.error("Failed to fetch curation status stats: %s", e)
+        raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+        
+    stats = {
+        "APPROVED": 0,
+        "PENDING": 0,
+        "REJECTED": 0,
+    }
+    for row in rows:
+        status = str(row["curation_status"]).upper() if row["curation_status"] else "PENDING"
+        if status in stats:
+            stats[status] += row["count"]
+        else:
+            # Handle other curation statuses if any
+            stats["PENDING"] += row["count"]
+            
+    return {
+        "approved": stats["APPROVED"],
+        "pending": stats["PENDING"],
+        "rejected": stats["REJECTED"]
+    }
