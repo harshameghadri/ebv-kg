@@ -365,8 +365,16 @@ class GraphRetriever:
 
         lines = []
 
-        # 1. Format High-Confidence relationships
+        # 1. Format identified entities
+        if entities:
+            lines.append("Identified Entities:")
+            for ent in entities:
+                lines.append(f"- {ent['name']} ({ent['entity_type']})")
+
+        # 2. Format High-Confidence relationships
         if relationships:
+            if lines and lines[-1] != "":
+                lines.append("")
             lines.append("Knowledge Graph Relations:")
             for rel in relationships:
                 src_name = rel["source_name"]
@@ -415,8 +423,8 @@ class GraphRetriever:
                 paper_strs = []
                 for p in papers_for_ent.values():
                     pmid_part = f", PMID: {p['pmid']}" if p.get("pmid") else ""
-                    title_part = f" '{p['title']}'" if p.get("title") else ""
-                    paper_strs.append(f"{title_part} (DOI: {p['doi']}{pmid_part})")
+                    title_part = f"'{p['title']}' " if p.get("title") else ""
+                    paper_strs.append(f"{title_part}(DOI: {p['doi']}{pmid_part})")
                 entity_mentions.append(
                     f"- {ent_name} ({ent_type}) is mentioned in: {'; '.join(paper_strs)}"
                 )

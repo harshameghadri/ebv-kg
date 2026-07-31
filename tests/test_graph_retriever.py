@@ -278,15 +278,19 @@ def test_format_neighborhood_context(mock_neo4j_client):
 
 def test_retrieve_graph_context_helper(mock_neo4j_client):
     """Verify that retrieve_graph_context helper works at module-level."""
-    # Mock return values to trace full pipeline execution
-    mock_neo4j_client.execute_query.side_effect = [
-        # 1. extract_candidates (fetch all entities)
-        [{"canonical_id": "HGNC:1", "name": "LMP1", "synonyms": []}],
-        # 2. get_neighborhood: hop 1 relations
-        [],
-        # 3. get_neighborhood: start entity details
-        [{"canonical_id": "HGNC:1", "name": "LMP1", "entity_type": "PROTEIN"}],
-    ]
+    def mock_query_router(query_str, params=None):
+        qs = " ".join(query_str.split())
+        if "RETURN e.canonical_id AS canonical_id, e.name AS name, e.synonyms AS synonyms" in qs:
+            return [{"canonical_id": "HGNC:1", "name": "LMP1", "synonyms": []}]
+        elif "type(r) <>" in qs:
+            return []
+        elif "MATCH (p:Paper)" in qs:
+            return []
+        elif "WHERE e.canonical_id IN $entity_ids" in qs:
+            return [{"canonical_id": "HGNC:1", "name": "LMP1", "entity_type": "PROTEIN"}]
+        return []
+
+    mock_neo4j_client.execute_query.side_effect = mock_query_router
 
     res = retrieve_graph_context(query="LMP1 research", neo4j_client=mock_neo4j_client)
 

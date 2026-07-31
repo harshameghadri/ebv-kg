@@ -1,9 +1,10 @@
 """Hybrid retriever module combining dense vector search and sparse full-text search."""
 
 import os
-from typing import Any, Dict, List, Optional
-from app.retrieval.vector import LanceDBClient
+from typing import Any
+
 from app.retrieval.embeddings import EmbeddingClient
+from app.retrieval.vector import LanceDBClient
 
 
 class HybridRetriever:
@@ -14,17 +15,16 @@ class HybridRetriever:
 
     def __init__(
         self,
-        vector_client: Optional[LanceDBClient] = None,
-        embedding_client: Optional[EmbeddingClient] = None,
-        reranker_model_name: Optional[str] = None,
+        vector_client: LanceDBClient | None = None,
+        embedding_client: EmbeddingClient | None = None,
+        reranker_model_name: str | None = None,
     ) -> None:
         """Initialize HybridRetriever.
 
         Args:
-            vector_client: Optional LanceDBClient instance. If None, a new one is created.
-            embedding_client: Optional EmbeddingClient instance. If None, a new one is created.
-            reranker_model_name: Optional cross-encoder model name. Defaults to env var
-                                 RERANKER_MODEL or 'cross-encoder/ms-marco-MiniLM-L-6-v2'.
+            vector_client: Optional LanceDBClient instance.
+            embedding_client: Optional EmbeddingClient instance.
+            reranker_model_name: Optional cross-encoder model name.
         """
         self.vector_client = vector_client or LanceDBClient()
         self.embedding_client = embedding_client or EmbeddingClient()
@@ -72,8 +72,9 @@ class HybridRetriever:
                 self._reranker = CrossEncoder(self.reranker_model_name, device=device)
             except Exception as e:
                 print(
-                    f"Warning: Failed to load CrossEncoder model '{self.reranker_model_name}'. "
-                    f"Reranking will fall back to hybrid retrieval scores. Error: {e}"
+                    f"Warning: Failed to load CrossEncoder model "
+                    f"'{self.reranker_model_name}'. Reranking will fall "
+                    f"back to hybrid retrieval scores. Error: {e}"
                 )
                 self._reranker_failed = True
                 self._reranker = None
@@ -86,26 +87,24 @@ class HybridRetriever:
         fusion_method: str = "rrf",
         rrf_k: int = 60,
         alpha: float = 0.5,
-        dense_limit: Optional[int] = None,
-        sparse_limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        dense_limit: int | None = None,
+        sparse_limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """Retrieve top_k combined candidates using hybrid dense and sparse search.
 
         Args:
             query: The search query text.
             top_k: Number of final reranked candidates to return.
-            fusion_method: Method to merge results, 'rrf' (Reciprocal Rank Fusion)
-                           or 'norm' (Normalized Score Combination).
+            fusion_method: Method to merge results, 'rrf' or 'norm'.
             rrf_k: RRF rank constant. Defaults to 60.
-            alpha: Weight for dense scores in normalized combination. Defaults to 0.5.
-            dense_limit: Maximum dense candidates to retrieve before fusion.
-                         Defaults to top_k * 4.
-            sparse_limit: Maximum sparse candidates to retrieve before fusion.
-                          Defaults to top_k * 4.
+            alpha: Weight for dense scores in normalized combination.
+            dense_limit: Max dense candidates before fusion.
+            sparse_limit: Max sparse candidates before fusion.
 
         Returns:
             List of top_k dictionaries with keys:
-            ['id', 'document_id', 'chunk_index', 'content', 'pmid', 'doi', 'title', 'score']
+            ['id', 'document_id', 'chunk_index', 'content',
+             'pmid', 'doi', 'title', 'score']
         """
         if not query:
             return []
@@ -117,7 +116,9 @@ class HybridRetriever:
         # 1. Dense Semantic Retrieval
         try:
             query_vector = self.embedding_client.embed_query(query)
-            dense_results = self.vector_client.search_vector(query_vector, limit=d_limit)
+            dense_results = self.vector_client.search_vector(
+                query_vector, limit=d_limit
+            )
         except Exception as e:
             print(f"Warning: Dense retrieval failed: {e}")
             dense_results = []
@@ -126,12 +127,20 @@ class HybridRetriever:
         try:
             table = self.vector_client.init_table()
             try:
-                fts_results = table.search(query, query_type="fts").limit(s_limit).to_list()
+                fts_results = (
+                    table.search(query, query_type="fts")
+                    .limit(s_limit)
+                    .to_list()
+                )
             except Exception:
                 # Retry after ensuring index exists
                 self._ensure_fts_index()
                 try:
-                    fts_results = table.search(query, query_type="fts").limit(s_limit).to_list()
+                    fts_results = (
+                        table.search(query, query_type="fts")
+                        .limit(s_limit)
+                        .to_list()
+                    )
                 except Exception as e2:
                     print(f"Warning: LanceDB FTS search failed: {e2}")
                     fts_results = []
@@ -150,7 +159,11 @@ class HybridRetriever:
                 "pmid": item.get("pmid"),
                 "doi": item.get("doi"),
                 "title": item.get("title"),
-                "score": item.get("_score") if "_score" in item else item.get("score", 0.0),
+                "score": (
+                    item.get("_score")
+                    if "_score" in item
+                    else item.get("score", 0.0)
+                ),
             })
 
         # 3. Candidate Fusion
@@ -172,7 +185,7 @@ class HybridRetriever:
             try:
                 pairs = [(query, c["content"]) for c in combined_candidates]
                 scores = reranker.predict(pairs)
-                for c, score in zip(combined_candidates, scores):
+                for c, score in zip(combined_candidates, scores, strict=False):
                     c["score"] = float(score)
                 # Sort by reranked score descending
                 combined_candidates.sort(key=lambda x: x["score"], reverse=True)
@@ -180,7 +193,16 @@ class HybridRetriever:
                 print(f"Warning: Reranking prediction failed: {e}")
 
         # Return top_k candidates with requested keys
-        output_keys = ["id", "document_id", "chunk_index", "content", "pmid", "doi", "title", "score"]
+        output_keys = [
+            "id",
+            "document_id",
+            "chunk_index",
+            "content",
+            "pmid",
+            "doi",
+            "title",
+            "score",
+        ]
         final_candidates = []
         for c in combined_candidates[:top_k]:
             final_candidates.append({k: c.get(k) for k in output_keys})
@@ -188,8 +210,11 @@ class HybridRetriever:
         return final_candidates
 
     def _reciprocal_rank_fusion(
-        self, dense_results: List[Dict[str, Any]], sparse_results: List[Dict[str, Any]], k: int
-    ) -> List[Dict[str, Any]]:
+        self,
+        dense_results: list[dict[str, Any]],
+        sparse_results: list[dict[str, Any]],
+        k: int,
+    ) -> list[dict[str, Any]]:
         """Perform Reciprocal Rank Fusion (RRF) on dense and sparse candidates."""
         rrf_scores = {}
         candidates_map = {}
@@ -199,7 +224,9 @@ class HybridRetriever:
             item_id = item.get("id") or item.get("content")
             if not item_id:
                 continue
-            rrf_scores[item_id] = rrf_scores.get(item_id, 0.0) + 1.0 / (k + rank + 1)
+            rrf_scores[item_id] = (
+                rrf_scores.get(item_id, 0.0) + 1.0 / (k + rank + 1)
+            )
             if item_id not in candidates_map:
                 candidates_map[item_id] = item
 
@@ -207,11 +234,15 @@ class HybridRetriever:
             item_id = item.get("id") or item.get("content")
             if not item_id:
                 continue
-            rrf_scores[item_id] = rrf_scores.get(item_id, 0.0) + 1.0 / (k + rank + 1)
+            rrf_scores[item_id] = (
+                rrf_scores.get(item_id, 0.0) + 1.0 / (k + rank + 1)
+            )
             if item_id not in candidates_map:
                 candidates_map[item_id] = item
 
-        sorted_ids = sorted(rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True)
+        sorted_ids = sorted(
+            rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True
+        )
 
         combined = []
         for item_id in sorted_ids:
@@ -222,10 +253,13 @@ class HybridRetriever:
         return combined
 
     def _normalized_score_combination(
-        self, dense_results: List[Dict[str, Any]], sparse_results: List[Dict[str, Any]], alpha: float
-    ) -> List[Dict[str, Any]]:
+        self,
+        dense_results: list[dict[str, Any]],
+        sparse_results: list[dict[str, Any]],
+        alpha: float,
+    ) -> list[dict[str, Any]]:
         """Combine dense and sparse scores by min-max normalization."""
-        def normalize(results: List[Dict[str, Any]]) -> Dict[str, float]:
+        def normalize(results: list[dict[str, Any]]) -> dict[str, float]:
             if not results:
                 return {}
             scores = [r.get("score", 0.0) for r in results]
@@ -234,7 +268,9 @@ class HybridRetriever:
             if denom == 0.0:
                 return {r.get("id") or r.get("content"): 1.0 for r in results}
             return {
-                r.get("id") or r.get("content"): (r.get("score", 0.0) - min_s) / denom
+                r.get("id") or r.get("content"): (
+                    (r.get("score", 0.0) - min_s) / denom
+                )
                 for r in results
             }
 
@@ -251,9 +287,15 @@ class HybridRetriever:
         for item_id in candidates_map:
             d_score = dense_norm.get(item_id, 0.0)
             s_score = sparse_norm.get(item_id, 0.0)
-            combined_scores[item_id] = alpha * d_score + (1.0 - alpha) * s_score
+            combined_scores[item_id] = (
+                alpha * d_score + (1.0 - alpha) * s_score
+            )
 
-        sorted_ids = sorted(combined_scores.keys(), key=lambda x: combined_scores[x], reverse=True)
+        sorted_ids = sorted(
+            combined_scores.keys(),
+            key=lambda x: combined_scores[x],
+            reverse=True,
+        )
 
         combined = []
         for item_id in sorted_ids:
