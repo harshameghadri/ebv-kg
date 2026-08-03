@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS document_chunks (
     document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     chunk_index INT NOT NULL,
     content TEXT,
-    token_count INT
+    token_count INT,
+    CONSTRAINT uq_document_chunks_doc_index UNIQUE (document_id, chunk_index)
 );
 
 -- Indexes for document_chunks
@@ -49,7 +50,8 @@ CREATE TABLE IF NOT EXISTS relationships (
     relationship_type VARCHAR NOT NULL,
     confidence_score DOUBLE PRECISION,
     curation_status VARCHAR,
-    source_type VARCHAR
+    source_type VARCHAR,
+    CONSTRAINT uq_relationships_source_target_type UNIQUE (source_entity_id, target_entity_id, relationship_type)
 );
 
 -- Indexes for relationships
@@ -65,7 +67,8 @@ CREATE TABLE IF NOT EXISTS relationship_evidence (
     relationship_id UUID NOT NULL REFERENCES relationships(id) ON DELETE CASCADE,
     chunk_id UUID NOT NULL REFERENCES document_chunks(id) ON DELETE CASCADE,
     confidence_score DOUBLE PRECISION,
-    citation_text TEXT
+    citation_text TEXT,
+    CONSTRAINT uq_evidence_rel_chunk UNIQUE (relationship_id, chunk_id)
 );
 
 -- Indexes for relationship_evidence

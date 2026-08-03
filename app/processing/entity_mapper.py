@@ -50,16 +50,34 @@ def parse_date(date_val: Any) -> Any:
     return None
 
 
-def determine_relationship_type(t1: str, t2: str) -> str:
-    """Determine a logical relationship type based on the entity types."""
-    types = {t1.upper(), t2.upper()}
-    if "GENE" in types and "DISEASE" in types:
+def determine_relationship_type(t1: str, t2: str, chunk_content: str = "") -> str:
+    """Determine a logical relationship type based on entity types and context text."""
+    t1_u, t2_u = t1.upper(), t2.upper()
+    types = {t1_u, t2_u}
+    content_lower = chunk_content.lower()
+
+    if "express" in content_lower or "induce" in content_lower or "upregulat" in content_lower:
+        return "EXPRESSES"
+    elif "inhib" in content_lower or "block" in content_lower or "suppress" in content_lower:
+        return "INHIBITS"
+    elif "bind" in content_lower or "interact" in content_lower:
+        return "INTERACTS_WITH"
+    elif "GENE" in types and "DISEASE" in types:
         return "ASSOCIATED_WITH"
-    if "PROTEIN" in types and "DISEASE" in types:
+    elif "PROTEIN" in types and "DISEASE" in types:
         return "ASSOCIATED_WITH"
-    if "CHEMICAL" in types and "DISEASE" in types:
-        return "ASSOCIATED_WITH"  # or TREATS. Standardize to ASSOCIATED_WITH per spec details
+    elif "CHEMICAL" in types and "DISEASE" in types:
+        return "TREATS" if ("treat" in content_lower or "therap" in content_lower or "drug" in content_lower) else "ASSOCIATED_WITH"
     return "CO_OCCURRING"
+    
+# priorities continue below...
+TYPE_PRIORITY: dict[str, int] = {
+    "CHEMICAL": 1,
+    "GENE": 2,
+    "PROTEIN": 2,
+    "CELL_TYPE": 3,
+    "DISEASE": 4,
+}
 
 
 class EntityMapper:
@@ -91,62 +109,63 @@ class EntityMapper:
         """
         try:
             with conn.cursor() as cursor:
-                # 1. Resolve Document ID and Upsert/Insert Document Metadata
+                # 1. Resolve Document ID and Upsert/Insert Document Metadata concurrently-safely
                 doc_id = doc_metadata.get("id")
+                doi = doc_metadata.get("doi")
+                pmid = doc_metadata.get("pmid")
+
                 if doc_id:
                     if isinstance(doc_id, str):
                         doc_id = uuid.UUID(doc_id)
                 else:
-                    # Look up existing document by DOI or PMID
-                    doi = doc_metadata.get("doi")
-                    pmid = doc_metadata.get("pmid")
+                    # Check if document already exists by DOI or PMID
+                    existing_id = None
                     if doi:
                         cursor.execute("SELECT id FROM documents WHERE doi = %s", (doi,))
                         row = cursor.fetchone()
                         if row:
-                            doc_id = row[0]
-                    if not doc_id and pmid:
+                            existing_id = row[0]
+                    if not existing_id and pmid:
                         cursor.execute("SELECT id FROM documents WHERE pmid = %s", (pmid,))
                         row = cursor.fetchone()
                         if row:
-                            doc_id = row[0]
-                    # Generate a new ID if not found
-                    if not doc_id:
+                            existing_id = row[0]
+
+                    if existing_id:
+                        doc_id = existing_id
+                    elif doi:
+                        doc_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"doi:{doi}")
+                    elif pmid:
+                        doc_id = uuid.uuid5(uuid.NAMESPACE_DNS, f"pmid:{pmid}")
+                    else:
                         doc_id = uuid.uuid4()
 
-                # Upsert Document
-                doi = doc_metadata.get("doi")
-                pmid = doc_metadata.get("pmid")
                 title = doc_metadata.get("title")
                 journal = doc_metadata.get("journal")
                 pub_date = parse_date(doc_metadata.get("published_date") or doc_metadata.get("publication_date"))
                 parsed_json = doc_metadata.get("parsed_json")
                 parsed_json_str = json.dumps(parsed_json) if parsed_json is not None else None
 
-                # Query if exists
-                cursor.execute("SELECT id FROM documents WHERE id = %s", (doc_id,))
-                if cursor.fetchone():
-                    cursor.execute(
-                        """
-                        UPDATE documents
-                        SET doi = %s, pmid = %s, title = %s, journal = %s, published_date = %s, parsed_json = %s
-                        WHERE id = %s
-                        """,
-                        (doi, pmid, title, journal, pub_date, parsed_json_str, doc_id)
-                    )
-                else:
-                    cursor.execute(
-                        """
-                        INSERT INTO documents (id, doi, pmid, title, journal, published_date, parsed_json)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        (doc_id, doi, pmid, title, journal, pub_date, parsed_json_str)
-                    )
+                # Concurrent-safe atomic document upsert
+                cursor.execute(
+                    """
+                    INSERT INTO documents (id, doi, pmid, title, journal, published_date, parsed_json)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (id) DO UPDATE 
+                    SET doi = EXCLUDED.doi, pmid = EXCLUDED.pmid, title = EXCLUDED.title, 
+                        journal = EXCLUDED.journal, published_date = EXCLUDED.published_date, 
+                        parsed_json = EXCLUDED.parsed_json
+                    RETURNING id;
+                    """,
+                    (doc_id, doi, pmid, title, journal, pub_date, parsed_json_str)
+                )
+                row = cursor.fetchone()
+                if row:
+                    doc_id = row[0]
 
                 # 2. Insert/Upsert Text Chunks
                 inserted_chunks = []
                 for idx, chunk in enumerate(text_chunks):
-                    # Check for chunk_index, fallback to loop index
                     chunk_index = chunk.get("chunk_index") or chunk.get("index")
                     if chunk_index is None:
                         chunk_index = idx
@@ -156,27 +175,21 @@ class EntityMapper:
                     content = chunk.get("content") or chunk.get("text") or ""
                     token_count = chunk.get("token_count") or len(content.split())
 
-                    # Check if chunk already exists for this document and index
+                    # Concurrent-safe document chunks upsert
+                    chunk_uuid = uuid.uuid4()
                     cursor.execute(
-                        "SELECT id FROM document_chunks WHERE document_id = %s AND chunk_index = %s",
-                        (doc_id, chunk_index)
+                        """
+                        INSERT INTO document_chunks (id, document_id, chunk_index, content, token_count)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (document_id, chunk_index) DO UPDATE 
+                        SET content = EXCLUDED.content, token_count = EXCLUDED.token_count
+                        RETURNING id;
+                        """,
+                        (chunk_uuid, doc_id, chunk_index, content, token_count)
                     )
                     row = cursor.fetchone()
                     if row:
                         chunk_uuid = row[0]
-                        cursor.execute(
-                            "UPDATE document_chunks SET content = %s, token_count = %s WHERE id = %s",
-                            (content, token_count, chunk_uuid)
-                        )
-                    else:
-                        chunk_uuid = uuid.uuid4()
-                        cursor.execute(
-                            """
-                            INSERT INTO document_chunks (id, document_id, chunk_index, content, token_count)
-                            VALUES (%s, %s, %s, %s, %s)
-                            """,
-                            (chunk_uuid, doc_id, chunk_index, content, token_count)
-                        )
 
                     inserted_chunks.append({
                         "uuid": chunk_uuid,
@@ -184,11 +197,8 @@ class EntityMapper:
                         "content": content,
                     })
 
-                # 3. Resolve and Normalize Entities
-                # We will keep an in-memory mapping of canonical_id -> entity_uuid to speed up inserts
-                canonical_id_to_uuid = {}
-                chunk_entities = defaultdict(list)
-
+                # 3. Resolve, Group, and Sort Entities to prevent database write locks deadlocks
+                resolved_ents = []
                 for raw_ent in ner_results:
                     entity_text = raw_ent.get("text") or raw_ent.get("mention") or raw_ent.get("name") or ""
                     entity_text = entity_text.strip()
@@ -198,7 +208,6 @@ class EntityMapper:
                     entity_type = raw_ent.get("entity_type") or raw_ent.get("category") or raw_ent.get("type") or "unknown"
                     ner_confidence = float(raw_ent.get("confidence") or raw_ent.get("prob") or raw_ent.get("score") or 1.0)
 
-                    # Resolve using SynonymResolver
                     res = self.resolver.resolve(entity_text, category=entity_type)
                     if res:
                         canonical_id = res["canonical_id"]
@@ -214,7 +223,35 @@ class EntityMapper:
                         ontology_source = "local_fallback"
                         resolution_confidence = 0.5
 
-                    # Write / Upsert Normalized Entity
+                    resolved_ents.append({
+                        "raw_ent": raw_ent,
+                        "canonical_id": canonical_id,
+                        "symbol": symbol,
+                        "category": category,
+                        "ontology_source": ontology_source,
+                        "resolution_confidence": resolution_confidence,
+                        "entity_text": entity_text,
+                        "entity_type": entity_type,
+                        "ner_confidence": ner_confidence,
+                    })
+
+                # Sort by canonical_id lexicographically so all parallel tasks lock entities in the same deterministic order
+                resolved_ents.sort(key=lambda x: x["canonical_id"])
+
+                canonical_id_to_uuid = {}
+                chunk_entities = defaultdict(list)
+
+                for ent in resolved_ents:
+                    canonical_id = ent["canonical_id"]
+                    entity_text = ent["entity_text"]
+                    symbol = ent["symbol"]
+                    category = ent["category"]
+                    ontology_source = ent["ontology_source"]
+                    entity_type = ent["entity_type"]
+                    ner_confidence = ent["ner_confidence"]
+                    resolution_confidence = ent["resolution_confidence"]
+                    raw_ent = ent["raw_ent"]
+
                     if canonical_id in canonical_id_to_uuid:
                         entity_uuid = canonical_id_to_uuid[canonical_id]
                         # Fetch and update synonyms if needed
@@ -229,47 +266,34 @@ class EntityMapper:
                                     (synonyms, entity_uuid)
                                 )
                     else:
-                        # Query DB to see if canonical_id exists
+                        entity_uuid = uuid.uuid4()
                         cursor.execute(
-                            "SELECT id, synonyms FROM normalized_entities WHERE canonical_id = %s",
-                            (canonical_id,)
+                            """
+                            INSERT INTO normalized_entities (id, canonical_id, name, entity_type, ontology_source, synonyms)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (canonical_id) DO UPDATE 
+                            SET synonyms = ARRAY(SELECT DISTINCT unnest(array_cat(COALESCE(normalized_entities.synonyms, '{}'), EXCLUDED.synonyms)))
+                            RETURNING id;
+                            """,
+                            (
+                                entity_uuid,
+                                canonical_id,
+                                symbol,
+                                category,
+                                ontology_source,
+                                [entity_text],
+                            )
                         )
                         row = cursor.fetchone()
                         if row:
                             entity_uuid = row[0]
-                            canonical_id_to_uuid[canonical_id] = entity_uuid
-                            synonyms = row[1] or []
-                            if entity_text not in synonyms:
-                                synonyms.append(entity_text)
-                                cursor.execute(
-                                    "UPDATE normalized_entities SET synonyms = %s WHERE id = %s",
-                                    (synonyms, entity_uuid)
-                                )
-                        else:
-                            entity_uuid = uuid.uuid4()
-                            canonical_id_to_uuid[canonical_id] = entity_uuid
-                            cursor.execute(
-                                """
-                                INSERT INTO normalized_entities (id, canonical_id, name, entity_type, ontology_source, synonyms)
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                                """,
-                                (
-                                    entity_uuid,
-                                    canonical_id,
-                                    symbol,
-                                    category,
-                                    ontology_source,
-                                    [entity_text],
-                                )
-                            )
+                        canonical_id_to_uuid[canonical_id] = entity_uuid
 
                     # Map Entity to Chunk
-                    # Determine which chunk it belongs to
                     mapped_chunk = None
                     chunk_index_val = raw_ent.get("chunk_index")
                     if chunk_index_val is not None:
                         chunk_index_int = int(chunk_index_val)
-                        # Find the inserted chunk with matching chunk_index
                         for c in inserted_chunks:
                             if c["chunk_index"] == chunk_index_int:
                                 mapped_chunk = c
@@ -281,13 +305,11 @@ class EntityMapper:
                                 mapped_chunk = c
                                 break
 
-                    # Fallback: substring matching in chunks
                     if not mapped_chunk and inserted_chunks:
                         for c in inserted_chunks:
                             if entity_text.lower() in c["content"].lower():
                                 mapped_chunk = c
                                 break
-                        # If still not mapped, default to first chunk
                         if not mapped_chunk:
                             mapped_chunk = inserted_chunks[0]
 
@@ -300,24 +322,22 @@ class EntityMapper:
                             "resolution_confidence": resolution_confidence,
                         })
 
-                # 4. Insert/Upsert Relationships and Evidence
+                # 4. Collect and Deduplicate Relationships & Evidence across all chunks in memory
+                relationships_to_upsert = {}
+
                 for chunk_uuid, entities in chunk_entities.items():
-                    # Find chunk content
                     chunk_content = ""
                     for c in inserted_chunks:
                         if c["uuid"] == chunk_uuid:
                             chunk_content = c["content"]
                             break
 
-                    # Deduplicate entities by canonical_id within the same chunk
-                    # keeping the one with higher combined confidence if duplicates exist
                     unique_chunk_entities = {}
                     for ent in entities:
                         cid = ent["canonical_id"]
                         if cid not in unique_chunk_entities:
                             unique_chunk_entities[cid] = ent
                         else:
-                            # Keep highest product of confidences
                             curr_conf = ent["ner_confidence"] * ent["resolution_confidence"]
                             prev_conf = (
                                 unique_chunk_entities[cid]["ner_confidence"]
@@ -328,9 +348,7 @@ class EntityMapper:
 
                     unique_list = list(unique_chunk_entities.values())
 
-                    # Insert relationship for all pairs of resolved entities
                     for ent1, ent2 in itertools.combinations(unique_list, 2):
-                        # Determine relationship direction based on TYPE_PRIORITY
                         p1 = TYPE_PRIORITY.get(ent1["entity_type"].upper(), 5)
                         p2 = TYPE_PRIORITY.get(ent2["entity_type"].upper(), 5)
 
@@ -348,10 +366,9 @@ class EntityMapper:
                         target_entity_id = target_ent["uuid"]
 
                         rel_type = determine_relationship_type(
-                            source_ent["entity_type"], target_ent["entity_type"]
+                            source_ent["entity_type"], target_ent["entity_type"], chunk_content
                         )
 
-                        # Combined confidence: product of the constituent NER/resolution confidences
                         combined_confidence = (
                             source_ent["ner_confidence"]
                             * source_ent["resolution_confidence"]
@@ -359,68 +376,89 @@ class EntityMapper:
                             * target_ent["resolution_confidence"]
                         )
 
-                        # Upsert relationship
+                        rel_key = (source_entity_id, target_entity_id, rel_type)
+                        
+                        if rel_key not in relationships_to_upsert:
+                            relationships_to_upsert[rel_key] = {
+                                "source_entity_id": source_entity_id,
+                                "target_entity_id": target_entity_id,
+                                "rel_type": rel_type,
+                                "combined_confidence": combined_confidence,
+                                "evidence": []
+                            }
+                        else:
+                            if combined_confidence > relationships_to_upsert[rel_key]["combined_confidence"]:
+                                relationships_to_upsert[rel_key]["combined_confidence"] = combined_confidence
+                        
+                        relationships_to_upsert[rel_key]["evidence"].append({
+                            "chunk_uuid": chunk_uuid,
+                            "confidence_score": combined_confidence,
+                            "citation_text": chunk_content
+                        })
+
+                # Sort relationships lexicographically to prevent database deadlocks on concurrent writes
+                sorted_rel_keys = sorted(relationships_to_upsert.keys(), key=lambda k: (str(k[0]), str(k[1]), k[2]))
+
+                # 5. Write/Upsert Relationships & Evidence in sorted order
+                for rel_key in sorted_rel_keys:
+                    rel_data = relationships_to_upsert[rel_key]
+                    source_entity_id = rel_data["source_entity_id"]
+                    target_entity_id = rel_data["target_entity_id"]
+                    rel_type = rel_data["rel_type"]
+                    combined_confidence = rel_data["combined_confidence"]
+
+                    # Determine 3-tier curation status
+                    if combined_confidence >= 0.80:
+                        curation_status = "APPROVED"
+                    else:
+                        curation_status = "PENDING"
+
+                    relationship_id = uuid.uuid4()
+                    cursor.execute(
+                        """
+                        INSERT INTO relationships (id, source_entity_id, target_entity_id, relationship_type, confidence_score, curation_status, source_type)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (source_entity_id, target_entity_id, relationship_type) DO UPDATE 
+                        SET confidence_score = GREATEST(relationships.confidence_score, EXCLUDED.confidence_score)
+                        RETURNING id;
+                        """,
+                        (
+                            relationship_id,
+                            source_entity_id,
+                            target_entity_id,
+                            rel_type,
+                            combined_confidence,
+                            curation_status,
+                            "text_mining"
+                        )
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        relationship_id = row[0]
+
+                    # Insert evidence (also sorted by chunk_uuid to prevent lock ordering conflicts)
+                    sorted_evidence = sorted(rel_data["evidence"], key=lambda e: str(e["chunk_uuid"]))
+                    for ev in sorted_evidence:
                         cursor.execute(
                             """
-                            SELECT id, confidence_score FROM relationships
-                            WHERE source_entity_id = %s AND target_entity_id = %s AND relationship_type = %s
+                            INSERT INTO relationship_evidence (id, relationship_id, chunk_id, confidence_score, citation_text)
+                            VALUES (%s, %s, %s, %s, %s)
+                            ON CONFLICT (relationship_id, chunk_id) DO UPDATE 
+                            SET confidence_score = GREATEST(relationship_evidence.confidence_score, EXCLUDED.confidence_score);
                             """,
-                            (source_entity_id, target_entity_id, rel_type)
-                        )
-                        rel_row = cursor.fetchone()
-                        if rel_row:
-                            relationship_id = rel_row[0]
-                            existing_conf = rel_row[1] or 0.0
-                            if combined_confidence > existing_conf:
-                                cursor.execute(
-                                    "UPDATE relationships SET confidence_score = %s WHERE id = %s",
-                                    (combined_confidence, relationship_id)
-                                )
-                        else:
-                            relationship_id = uuid.uuid4()
-                            cursor.execute(
-                                """
-                                INSERT INTO relationships (id, source_entity_id, target_entity_id, relationship_type, confidence_score, curation_status, source_type)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                                """,
-                                (
-                                    relationship_id,
-                                    source_entity_id,
-                                    target_entity_id,
-                                    rel_type,
-                                    combined_confidence,
-                                    "PENDING",
-                                    "text_mining"
-                                )
+                            (
+                                uuid.uuid4(),
+                                relationship_id,
+                                ev["chunk_uuid"],
+                                ev["confidence_score"],
+                                ev["citation_text"]
                             )
-
-                        # Insert Relationship Evidence
-                        cursor.execute(
-                            "SELECT id FROM relationship_evidence WHERE relationship_id = %s AND chunk_id = %s",
-                            (relationship_id, chunk_uuid)
                         )
-                        ev_row = cursor.fetchone()
-                        if not ev_row:
-                            cursor.execute(
-                                """
-                                INSERT INTO relationship_evidence (id, relationship_id, chunk_id, confidence_score, citation_text)
-                                VALUES (%s, %s, %s, %s, %s)
-                                """,
-                                (
-                                    uuid.uuid4(),
-                                    relationship_id,
-                                    chunk_uuid,
-                                    combined_confidence,
-                                    chunk_content
-                                )
-                            )
 
-            # If all operations succeed, commit the transaction
             conn.commit()
             return doc_id
 
         except Exception as e:
-            # Rollback transaction on error
             try:
                 conn.rollback()
             except Exception as rollback_err:

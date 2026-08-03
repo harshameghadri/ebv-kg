@@ -2,6 +2,16 @@ import os
 import re
 from typing import Any, Optional
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+# Ensure HF_TOKEN is mapped to HUGGINGFACE_HUB_TOKEN for huggingface_hub / sentence_transformers
+if os.getenv("HF_TOKEN") and not os.getenv("HUGGINGFACE_HUB_TOKEN"):
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = os.getenv("HF_TOKEN")
+
 class EmbeddingClient:
     """
     Local embedding client utilizing sentence-transformers or FlagEmbedding.
@@ -13,10 +23,10 @@ class EmbeddingClient:
         
         Args:
             model_name: Optional name of the model to use. Defaults to env var EMBEDDINGS_MODEL
-                        or 'all-MiniLM-L6-v2' if not specified.
+                        or 'allenai/specter2' if not specified.
             device: Optional torch device string. If None, auto-detected.
         """
-        self.model_name = model_name or os.getenv("EMBEDDINGS_MODEL", "all-MiniLM-L6-v2")
+        self.model_name = model_name or os.getenv("EMBEDDINGS_MODEL", "allenai/specter2")
         self._device = device
         self._model = None
         self._flag_model = None

@@ -5,32 +5,42 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ## Backlog
 
 ### EPIC01: Ingestion Layer
-- [ ] **T105**: Build a CLI command to ingest and parse single-cell AnnData (`.h5ad`) files and export marker gene CSVs, cell type labels, and spatial coordinates into staging tables.
+- [x] **T105**: Build a CLI command to ingest and parse single-cell AnnData (`.h5ad`) files and export marker gene CSVs, cell type labels into PostgreSQL staging (`app/ingestion/anndata_cli.py`).
 
 ### EPIC02: Entity Normalization & NER Pipeline
-- [ ] **T203**: Implement entity mapping module `app/entity_mapper.py` that normalizes raw NER entities to canonical ontology IDs with combined confidence scores.
+- [x] **T203**: Implement entity mapping module `app/entity_mapper.py` that normalizes raw NER entities to canonical ontology IDs with combined confidence scores.
 
 ### EPIC03: Knowledge Graph Materialization
-- [ ] **T302**: Implement `AgeEngine` using PostgreSQL AGE extension to execute graph operations inside PostgreSQL.
-- [ ] **T303**: Implement `LadybugEngine` to execute graph operations on the embedded LadybugDB/Kùzu engine.
-- [ ] **T304**: Build a graph engine benchmarking script to measure AGE vs LadybugDB write throughput and multi-hop read latency, outputting a comparative JSON report.
+- [x] **T302**: Implement `AgeEngine` using PostgreSQL AGE extension to execute graph operations inside PostgreSQL (`app/materialization/age_engine.py`).
+- [x] **T303**: Implement `KuzuEngine` in `app/materialization/kuzu_engine.py` to execute graph operations on the embedded C++ Kùzu engine with fallback support and 2-hop neighborhood path retrieval.
+- [x] **T304**: Built graph engine benchmarking script (`app/materialization/benchmark_graph_engines.py`) measuring write throughput and multi-hop Cypher read latency across Neo4jClient, KuzuEngine, and AgeEngine, returning structured JSON metrics.
 - [x] **T305**: Implement the materialization pipeline module that reads normalized entities and relationships from PostgreSQL and writes them into the selected graph engine.
 
 ### EPIC04: Retrieval & Hybrid Search Layer
-- [ ] **T401**: Set up LanceDB vector store client in `app/retrieval/vector.py` supporting Arrow-native dense and metadata indexing.
+- [x] **T401**: Set up LanceDB vector store client in `app/retrieval/vector.py` supporting Arrow-native dense and metadata indexing.
 - [x] **T402**: Implement local BGE-M3 embedding client in `app/embeddings.py` to generate dense vector embeddings and sparse lexical weights.
 - [x] **T403**: Build hybrid retriever in `app/retrieval/hybrid.py` that queries LanceDB for dense candidates, combines with sparse lexical candidates, and performs cross-encoder reranking using `bge-reranker-v2`.
 - [x] **T404**: Implement graph-augmented context retrieval by querying multi-hop entity associations from the materialization graph engine to expand the document search candidates.
 
 ### EPIC05: LLM Synthesis & RAG Query Layer
 - [x] **T501**: Implemented LLM synthesis client utilizing Claude API to generate factual answers with confidence scoring and citation mapping, verified with comprehensive tests.
-- [ ] **T502**: Implement FastAPI server with routes for search queries, hybrid semantic retrieval, RAG synthesis, and graph node visualization.
-- [ ] **T503**: Build evaluation test suite comparing specter2 vs BGE-M3 embedding models on 50+ gold-standard EBV biological queries, calculating recall@K.
+- [x] **T502**: Implement FastAPI server with routes for search queries, hybrid semantic retrieval, RAG synthesis, and graph node visualization.
+- [x] **T503**: Build evaluation test suite comparing specter2 vs BGE-M3 embedding models on 50+ gold-standard EBV biological queries, calculating recall@K.
 
 ### EPIC06: Human Curation & Discovery Loop
-- [ ] **T601**: Implement LightRAG indexing runner in `discovery/lightrag_runner.py` that runs automated clustering and community detection on the PostgreSQL text corpus.
-- [ ] **T602**: Build the harvesting script in `discovery/harvest.py` that ranks LightRAG discovery candidates against the canonical KG and promotes the top 20 candidates weekly to the review queue.
-- [ ] **T603**: Create web-based Curation Dashboard using HTML/CSS/JS (FastAPI frontend) displaying pending entities and relationships with approve/reject actions.
+- [x] **T601**: Implement LightRAG indexing runner in `discovery/lightrag_runner.py` that runs automated clustering and community detection on the PostgreSQL text corpus.
+- [x] **T602**: Build the harvesting script in `discovery/harvest.py` that ranks LightRAG discovery candidates against the canonical KG and promotes the top 20 candidates weekly to the review queue.
+- [x] **T603**: Create web-based Curation Dashboard using HTML/CSS/JS (FastAPI frontend) displaying pending entities and relationships with approve/reject actions.
+
+### EPIC07: Production Web Application & Ultra-Fast Graph-RAG
+- [x] **T703**: Author unified master system specification (`master_ebv_system_spec.md`) consolidating problem statement, 7-entity core schema, off-the-shelf technology stack (`FastAPI`, `LanceDB`, `KùzuDB`/`Neo4j`, `specter2`, `Cytoscape.js`), and instant web deployment workflow.
+- [x] **T704**: Implement MVP operational fixes resolving entity mapping, specter2 embeddings default, built-in biological reference dictionaries, and 3-tier relationship curation status.
+- [/] **T705**: Execute 3-tier literature search funnel (Level 1: Organism/Disease, Level 2: Viral Loci/Latency, Level 3: Molecular Interactions) with automated background pueue monitoring.
+- [x] **T706**: Implement AnnData `.h5ad` and cluster marker parser (`app/ingestion/anndata_parser.py`) linking single-cell RNA-seq marker genes (`TBX21`, `CXCR3`) directly to `CellState` nodes (`Atypical B Cell`, `GCB`).
+- [x] **T707**: Implement Path-to-Text `FactSerializer` (`app/retrieval/fact_serializer.py`) converting retrieved Cypher graph paths into standardized natural language fact triples for LLM prompts.
+- [x] **T708**: Implement 2-Hop Subgraph Neighborhood Pruner (`app/retrieval/subgraph_pruner.py`) ranking retrieved graph paths by vector similarity to user prompt.
+- [x] **T709**: Implement Unified `GraphRAGPipeline` (`app/retrieval/graph_rag_pipeline.py`) orchestrating LanceDB vector search, multi-hop graph retrieval, path pruning, fact serialization, and LLM synthesis with dual citations.
+- [x] **T710**: Implement FastAPI Health & Metrics Router (`app/api/health_routes.py`) serving `/api/v1/health` and `/api/v1/metrics`.
 
 ---
 
@@ -40,7 +50,7 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ---
 
 ## In Progress
-- None
+- [/] **T705**: Execute 3-tier literature search funnel (Level 1: Organism/Disease, Level 2: Viral Loci/Latency, Level 3: Molecular Interactions) with automated background pueue monitoring.
 
 ---
 
@@ -50,6 +60,10 @@ This document serves as the agile task tracker for the EBV Knowledge System. It 
 ---
 
 ## Done
+- [x] **T304**: Implemented Graph Engine Benchmarking Script (`app/materialization/benchmark_graph_engines.py`) and AgeEngine wrapper (`app/materialization/age_engine.py`) measuring write throughput (nodes/sec, edges/sec) and multi-hop Cypher read latency across Neo4jClient, KuzuEngine, and AgeEngine with full test suite (`tests/test_benchmark_graph_engines.py`).
+- [x] **T302**: Implemented `AgeEngine` (`app/materialization/age_engine.py`) wrapping PostgreSQL Apache AGE extension (`ag_catalog`) with Cypher query execution, schema management (`create_graph('ebv_graph')`), bulk node/edge upserts, 2-hop neighborhood path retrieval, and mock fallback (`MockAgeConnection`/`MockAgeDatabase`), verified with pytest suite (`tests/test_age_engine.py`, 10/10 passing).
+- [x] **T708**: Implemented 2-Hop Subgraph Neighborhood Pruner (`app/retrieval/subgraph_pruner.py`) ranking retrieved graph paths by vector similarity to user prompt and pruning to top-K for LLM context window optimization, verified with comprehensive unit tests (`tests/test_subgraph_pruner.py`).
+- [x] **T504**: Implemented FastAPI Hypothesis Router (`app/api/hypothesis_routes.py`) serving `/api/v1/hypothesis/niche-overlap` querying Neo4j/PostgreSQL for CellState nodes connected to multiple distinct DiseaseOutcome entities across silos, verified with unit tests (`tests/test_hypothesis_routes.py`).
 - [x] **T404**: Implemented graph-augmented retriever (`app/retrieval/graph.py`) using Neo4jClient to traverse 2-hop neighborhoods, retrieve related entities/papers, and format context, verified with unit tests (`tests/test_graph_retriever.py`).
 - [x] **T403**: Implemented hybrid retriever (`app/retrieval/hybrid.py`) combining dense semantic search (via LanceDB), sparse lexical search (via LanceDB FTS index), and cross-encoder reranking (via sentence-transformers CrossEncoder), verified with unit tests (`tests/test_hybrid.py`).
 - [x] **T503**: Implemented embedding evaluation suite (`app/evaluation/benchmark.py`) comparing retrieval metrics (precision@K, recall@K, MRR) across different embedding models on gold-standard EBV queries, verified with comprehensive tests (`tests/test_benchmark.py`).

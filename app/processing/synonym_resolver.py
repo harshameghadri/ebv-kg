@@ -54,6 +54,9 @@ class SynonymResolver:
         self.ols_enabled = ols_enabled
         self.ols_timeout = ols_timeout
         self.fuzzy_threshold = fuzzy_threshold
+        self.ols_consecutive_failures = 0
+        self.ols_cooldown_until = 0.0
+        self.ols_cooldown_duration = 300.0  # 5 minutes
 
         # Storage structure per category:
         # _raw_map[category][raw_lowercased_term] -> record
@@ -62,6 +65,63 @@ class SynonymResolver:
         self._raw_map: dict[str, dict[str, dict[str, Any]]] = {}
         self._norm_map: dict[str, dict[str, dict[str, Any]]] = {}
         self._term_list: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+
+        # Default built-in biomedical and EBV reference dictionary
+        ebv_protein_entries = [
+            {"term": "EBNA1", "canonical_id": "UniProt:P03211", "symbol": "EBNA1", "aliases": ["EBNA-1", "Epstein-Barr nuclear antigen 1", "EBNA 1"]},
+            {"term": "EBNA2", "canonical_id": "UniProt:P12977", "symbol": "EBNA2", "aliases": ["EBNA-2", "Epstein-Barr nuclear antigen 2", "EBNA 2"]},
+            {"term": "LMP1", "canonical_id": "UniProt:P03230", "symbol": "LMP1", "aliases": ["LMP-1", "Latent membrane protein 1", "LMP 1"]},
+            {"term": "LMP2A", "canonical_id": "UniProt:P13285", "symbol": "LMP2A", "aliases": ["LMP-2A", "Latent membrane protein 2A"]},
+            {"term": "LMP2B", "canonical_id": "UniProt:P13286", "symbol": "LMP2B", "aliases": ["LMP-2B", "Latent membrane protein 2B"]},
+            {"term": "BZLF1", "canonical_id": "UniProt:P03206", "symbol": "BZLF1", "aliases": ["ZEBRA", "Zta", "Z", "EBV Zta"]},
+            {"term": "BRLF1", "canonical_id": "UniProt:P03209", "symbol": "BRLF1", "aliases": ["Rta", "R", "EBV Rta"]},
+            {"term": "BARF1", "canonical_id": "UniProt:P03229", "symbol": "BARF1", "aliases": ["BARF-1"]},
+            {"term": "BALF5", "canonical_id": "UniProt:P03198", "symbol": "BALF5", "aliases": ["EBV DNA Polymerase"]},
+            {"term": "BMRF1", "canonical_id": "UniProt:P03191", "symbol": "BMRF1", "aliases": ["EA-D", "EBV EA-D"]},
+        ]
+        DEFAULT_BIOMEDICAL_DICT: dict[str, list[dict[str, Any]]] = {
+            "hgnc": ebv_protein_entries + [
+                {"term": "CD21", "canonical_id": "HGNC:2333", "symbol": "CR2", "aliases": ["CD21", "CR2", "Complement Receptor 2"]},
+                {"term": "CD19", "canonical_id": "HGNC:1633", "symbol": "CD19", "aliases": ["B-lymphocyte antigen CD19"]},
+                {"term": "CD20", "canonical_id": "HGNC:7436", "symbol": "MS4A1", "aliases": ["CD20", "MS4A1"]},
+                {"term": "CD40", "canonical_id": "HGNC:1193", "symbol": "CD40", "aliases": ["TNFRSF5"]},
+                {"term": "MYC", "canonical_id": "HGNC:7553", "symbol": "MYC", "aliases": ["c-Myc", "c-MYC"]},
+                {"term": "BCL2", "canonical_id": "HGNC:990", "symbol": "BCL2", "aliases": ["Bcl-2"]},
+                {"term": "TP53", "canonical_id": "HGNC:11998", "symbol": "TP53", "aliases": ["p53", "P53"]},
+                {"term": "PD-L1", "canonical_id": "HGNC:17635", "symbol": "CD274", "aliases": ["PDL1", "PD-L1", "CD274"]},
+                {"term": "NFKB1", "canonical_id": "HGNC:7794", "symbol": "NFKB1", "aliases": ["NF-kB", "NFKB", "p50"]},
+                {"term": "STAT3", "canonical_id": "HGNC:11364", "symbol": "STAT3", "aliases": ["Signal transducer and activator of transcription 3"]},
+            ],
+            "uniprot": ebv_protein_entries,
+            "cl": [
+                {"term": "B cell", "canonical_id": "CL:0000236", "symbol": "B cell", "aliases": ["B-cell", "B lymphocyte", "B cells", "B-cells"]},
+                {"term": "Memory B cell", "canonical_id": "CL:0000787", "symbol": "Memory B cell", "aliases": ["Memory B-cell", "Memory B cells"]},
+                {"term": "Naive B cell", "canonical_id": "CL:0000788", "symbol": "Naive B cell", "aliases": ["Naive B-cell"]},
+                {"term": "Plasmablast", "canonical_id": "CL:0000980", "symbol": "Plasmablast", "aliases": ["Plasmablasts"]},
+                {"term": "Plasma cell", "canonical_id": "CL:0000786", "symbol": "Plasma cell", "aliases": ["Plasma cells"]},
+                {"term": "T cell", "canonical_id": "CL:0000084", "symbol": "T cell", "aliases": ["T-cell", "T lymphocyte", "T cells"]},
+                {"term": "CD8+ T cell", "canonical_id": "CL:0000625", "symbol": "CD8+ T cell", "aliases": ["CD8+ T-cell", "Cytotoxic T cell"]},
+                {"term": "CD4+ T cell", "canonical_id": "CL:0000624", "symbol": "CD4+ T cell", "aliases": ["CD4+ T-cell", "Helper T cell"]},
+                {"term": "NK cell", "canonical_id": "CL:0000623", "symbol": "NK cell", "aliases": ["Natural Killer cell", "NK cells"]},
+                {"term": "LCL", "canonical_id": "CL:0000785", "symbol": "LCL", "aliases": ["Lymphoblastoid cell line", "Lymphoblastoid cells"]},
+                {"term": "Epithelial cell", "canonical_id": "CL:0000066", "symbol": "Epithelial cell", "aliases": ["Epithelial cells"]},
+            ],
+            "doid": [
+                {"term": "Epstein-Barr Virus", "canonical_id": "NCBITaxon:10376", "symbol": "EBV", "aliases": ["EBV", "Epstein Barr Virus", "HHV-4", "Human gammaherpesvirus 4"]},
+                {"term": "Infectious Mononucleosis", "canonical_id": "DOID:8549", "symbol": "Infectious Mononucleosis", "aliases": ["Glandular fever", "Mono"]},
+                {"term": "Burkitt Lymphoma", "canonical_id": "DOID:8540", "symbol": "Burkitt Lymphoma", "aliases": ["Burkitt's lymphoma", "BL"]},
+                {"term": "Hodgkin Lymphoma", "canonical_id": "DOID:8567", "symbol": "Hodgkin Lymphoma", "aliases": ["Hodgkin's lymphoma", "HL", "Hodgkin disease"]},
+                {"term": "Nasopharyngeal Carcinoma", "canonical_id": "DOID:9261", "symbol": "Nasopharyngeal Carcinoma", "aliases": ["NPC", "Nasopharyngeal cancer"]},
+                {"term": "Gastric Carcinoma", "canonical_id": "DOID:10534", "symbol": "Gastric Carcinoma", "aliases": ["Gastric cancer", "Stomach cancer"]},
+                {"term": "Post-Transplant Lymphoproliferative Disorder", "canonical_id": "DOID:0060044", "symbol": "PTLD", "aliases": ["PTLD"]},
+                {"term": "Multiple Sclerosis", "canonical_id": "DOID:2377", "symbol": "Multiple Sclerosis", "aliases": ["MS"]},
+                {"term": "Systemic Lupus Erythematosus", "canonical_id": "DOID:9074", "symbol": "Systemic Lupus Erythematosus", "aliases": ["SLE", "Lupus"]},
+            ]
+        }
+
+        # Load default built-in dictionaries first
+        for cat, data in DEFAULT_BIOMEDICAL_DICT.items():
+            self.load_dictionary(cat, data)
 
         if dictionary_dir:
             self.load_from_directory(dictionary_dir)
@@ -329,7 +389,11 @@ class SynonymResolver:
     def _resolve_ols(
         self, term: str, category: str | None = None
     ) -> dict[str, Any] | None:
-        """Query EMBL-EBI OLS API for term resolution as fallback."""
+        """Query EMBL-EBI OLS API for term resolution as fallback with cooldown."""
+        import time
+        if time.time() < self.ols_cooldown_until:
+            return None
+
         ontology_filter = None
         cat_key = None
         if category:
@@ -346,8 +410,13 @@ class SynonymResolver:
             )
             if response.status_code != 200:
                 logger.warning(f"OLS API returned status code {response.status_code}")
+                self.ols_consecutive_failures += 1
+                if self.ols_consecutive_failures >= 3:
+                    logger.error("OLS API failed 3 consecutive times. Disabling OLS fallback for 5 minutes.")
+                    self.ols_cooldown_until = time.time() + self.ols_cooldown_duration
                 return None
 
+            self.ols_consecutive_failures = 0
             data = response.json()
             docs = data.get("response", {}).get("docs", [])
             if not docs:
@@ -381,6 +450,10 @@ class SynonymResolver:
             }
         except requests.RequestException as e:
             logger.warning(f"OLS API request failed for '{term}': {e}")
+            self.ols_consecutive_failures += 1
+            if self.ols_consecutive_failures >= 3:
+                logger.error("OLS API failed 3 consecutive times. Disabling OLS fallback for 5 minutes.")
+                self.ols_cooldown_until = time.time() + self.ols_cooldown_duration
             return None
         except Exception as e:
             logger.error(f"Error parsing OLS API response for '{term}': {e}")

@@ -1,12 +1,16 @@
 """LLM Synthesis Client using Anthropic Claude."""
 
 import json
+import logging
 import os
 import re
+from typing import Any
 
 from anthropic import Anthropic
 
 from app.synthesis.prompts import SYSTEM_PROMPT_TEMPLATE, USER_PROMPT_TEMPLATE
+
+logger = logging.getLogger(__name__)
 
 
 class ClaudeSynthesisClient:
@@ -18,9 +22,39 @@ class ClaudeSynthesisClient:
         """Initialize the client with an optional API key and model."""
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.model = model
-        # Initialize Anthropic client. If api_key is None, standard client raises.
-        # To make testing easy, use dummy key if api_key and env are missing.
-        self.client = Anthropic(api_key=self.api_key or "dummy_key")
+        self._local_gen = None
+        self.use_local = os.getenv("USE_LOCAL_LLM", "false").lower() == "true" or not self.api_key
+        
+        # Only initialize Anthropic client if we are not forced to be local
+        if not self.use_local:
+            self.client = Anthropic(api_key=self.api_key)
+        else:
+            self.client = None
+
+    def _get_local_generator(self) -> Any:
+        """Lazy load local HuggingFace text generation pipeline."""
+        if self._local_gen is None:
+            logger.info("Initializing local HuggingFace LLM for synthesis...")
+            from transformers import pipeline
+            import torch
+            
+            model_id = os.getenv("LOCAL_LLM_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")
+            use_gpu = os.getenv("FORCE_GPU_LLM", "false").lower() == "true"
+            
+            if use_gpu and torch.cuda.is_available():
+                device = 0
+                torch_dtype = torch.float16
+            else:
+                device = -1
+                torch_dtype = torch.float32
+            
+            self._local_gen = pipeline(
+                "text-generation",
+                model=model_id,
+                torch_dtype=torch_dtype,
+                device=device,
+            )
+        return self._local_gen
 
     def synthesize(
         self, query: str, retrieved_chunks: list[dict], graph_context: str = ""
@@ -88,19 +122,57 @@ class ClaudeSynthesisClient:
             graph_context=graph_context_str
         )
         
-        try:
-            # Call Anthropic API
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=4096,
-                system=SYSTEM_PROMPT_TEMPLATE,
-                messages=[
+        # Check if using local model or fallback
+        if self.use_local or not self.client:
+            try:
+                nlp = self._get_local_generator()
+                messages = [
+                    {"role": "system", "content": SYSTEM_PROMPT_TEMPLATE},
                     {"role": "user", "content": user_prompt}
                 ]
-            )
-            response_text = response.content[0].text
-        except Exception as e:
-            raise RuntimeError(f"Failed to call Anthropic API: {e}") from e
+                # Format using model tokenizer chat template
+                prompt = nlp.tokenizer.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=True
+                )
+                logger.info("Generating synthesis response locally...")
+                res = nlp(prompt, max_new_tokens=1024, return_full_text=False)
+                response_text = res[0]["generated_text"]
+            except Exception as e:
+                logger.error("Local LLM generation failed: %s", e)
+                raise RuntimeError(f"Failed local LLM generation: {e}") from e
+        else:
+            try:
+                # Call Anthropic API
+                response = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=4096,
+                    system=SYSTEM_PROMPT_TEMPLATE,
+                    messages=[
+                        {"role": "user", "content": user_prompt}
+                    ]
+                )
+                response_text = response.content[0].text
+            except Exception as e:
+                # Only trigger local fallback in unit tests if USE_LOCAL_LLM is enabled or api_key is missing/dummy
+                if os.getenv("USE_LOCAL_LLM", "false").lower() == "true" or not self.api_key or self.api_key == "dummy_key":
+                    logger.warning("Anthropic API failed, trying local fallback... Error: %s", e)
+                    try:
+                        nlp = self._get_local_generator()
+                        messages = [
+                            {"role": "system", "content": SYSTEM_PROMPT_TEMPLATE},
+                            {"role": "user", "content": user_prompt}
+                        ]
+                        prompt = nlp.tokenizer.apply_chat_template(
+                            messages, tokenize=False, add_generation_prompt=True
+                        )
+                        res = nlp(prompt, max_new_tokens=1024, return_full_text=False)
+                        response_text = res[0]["generated_text"]
+                    except Exception as local_err:
+                        raise RuntimeError(
+                            f"Both Anthropic and local fallback failed. Anthropic error: {e}; Local error: {local_err}"
+                        ) from local_err
+                else:
+                    raise RuntimeError(f"Failed to call Anthropic API: {e}") from e
             
         # Parse the response
         try:
@@ -118,8 +190,37 @@ class ClaudeSynthesisClient:
                 confidence = float(confidence)
             except (ValueError, TypeError):
                 confidence = 0.0
+        except Exception as e:
+            if not self.use_local:
+                raise ValueError(
+                    f"Failed to parse Claude response: {e}. "
+                    f"Raw response: {response_text}"
+                ) from e
                 
-            # Extract citations
+            logger.warning("Failed to parse LLM response as JSON. Running fallback parser... Error: %s", e)
+            answer = response_text.strip()
+            # If the response contains markdown JSON blocks, clean them
+            if answer.startswith("```"):
+                answer = re.sub(r"^```(?:json)?\n", "", answer)
+                answer = re.sub(r"\n```$", "", answer)
+                answer = answer.strip()
+            
+            # Try parsing again after cleaning
+            try:
+                json_match = re.search(r"\{.*\}", answer, re.DOTALL)
+                if json_match:
+                    parsed = json.loads(json_match.group(0))
+                    answer = parsed.get("answer", answer)
+                    confidence = parsed.get("confidence", 0.70)
+                else:
+                    parsed = {}
+                    confidence = 0.70
+            except Exception:
+                parsed = {}
+                confidence = 0.70
+
+        # Extract citations
+        try:
             citation_indices = set()
             matches = re.findall(r"\[(\d+)\]", answer)
             for m in matches:
@@ -186,9 +287,8 @@ class ClaudeSynthesisClient:
                 "confidence": confidence,
                 "citations": citations
             }
-            
-        except Exception as e:
+        except Exception as cite_err:
             raise ValueError(
-                f"Failed to parse Claude response: {e}. "
+                f"Failed to parse Claude response: {cite_err}. "
                 f"Raw response: {response_text}"
-            ) from e
+            ) from cite_err

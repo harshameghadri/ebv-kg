@@ -368,15 +368,19 @@ class GraphRetriever:
         # 1. Format identified entities
         if entities:
             lines.append("Identified Entities:")
-            for ent in entities:
+            for ent in entities[:30]:
                 lines.append(f"- {ent['name']} ({ent['entity_type']})")
+            if len(entities) > 30:
+                lines.append(f"... and {len(entities) - 30} more entities.")
 
         # 2. Format High-Confidence relationships
         if relationships:
             if lines and lines[-1] != "":
                 lines.append("")
             lines.append("Knowledge Graph Relations:")
-            for rel in relationships:
+            # Sort by confidence descending
+            sorted_rels = sorted(relationships, key=lambda x: x.get("confidence_score") or 0.0, reverse=True)
+            for rel in sorted_rels[:50]:
                 src_name = rel["source_name"]
                 src_type = rel["source_type"]
                 tgt_name = rel["target_name"]
@@ -396,10 +400,13 @@ class GraphRetriever:
 
                 if co_dois:
                     paper_strs = []
-                    for doi in co_dois:
+                    # Limit to top 3 co-mentioning papers
+                    for doi in list(co_dois)[:3]:
                         paper = src_papers[doi]
                         pmid_part = f", PMID: {paper['pmid']}" if paper.get("pmid") else ""
                         paper_strs.append(f"DOI: {doi}{pmid_part}")
+                    if len(co_dois) > 3:
+                        paper_strs.append(f"and {len(co_dois) - 3} more")
                     papers_text = " and ".join(paper_strs)
                     lines.append(
                         f"- {src_name} ({src_type}) {rel_label} {tgt_name} ({tgt_type}) "
@@ -410,9 +417,12 @@ class GraphRetriever:
                         f"- {src_name} ({src_type}) {rel_label} {tgt_name} ({tgt_type}) "
                         f"[confidence: {conf:.2f}]."
                     )
+            if len(relationships) > 50:
+                lines.append(f"... and {len(relationships) - 50} more relations.")
 
-        # 2. Format overall entity annotations & references
+        # 3. Format overall entity annotations & references
         entity_mentions = []
+        mention_count = 0
         for ent in entities:
             ent_id = ent["canonical_id"]
             ent_name = ent["name"]
@@ -420,20 +430,35 @@ class GraphRetriever:
 
             papers_for_ent = entity_to_papers.get(ent_id, {})
             if papers_for_ent:
+                if mention_count >= 10:
+                    continue
                 paper_strs = []
-                for p in papers_for_ent.values():
+                # Limit to top 3 papers per entity
+                for p in list(papers_for_ent.values())[:3]:
                     pmid_part = f", PMID: {p['pmid']}" if p.get("pmid") else ""
                     title_part = f"'{p['title']}' " if p.get("title") else ""
                     paper_strs.append(f"{title_part}(DOI: {p['doi']}{pmid_part})")
+                if len(papers_for_ent) > 3:
+                    paper_strs.append(f"and {len(papers_for_ent) - 3} more papers")
                 entity_mentions.append(
                     f"- {ent_name} ({ent_type}) is mentioned in: {'; '.join(paper_strs)}"
                 )
+                mention_count += 1
 
         if entity_mentions:
             if lines:
                 lines.append("")
             lines.append("Entity Literature Mentions:")
             lines.extend(entity_mentions)
+            if len(entities) > mention_count:
+                # Indicate some entities were omitted if we hit the limit
+                has_omitted = False
+                for ent in entities[mention_count:]:
+                    if ent["canonical_id"] in entity_to_papers:
+                        has_omitted = True
+                        break
+                if has_omitted:
+                    lines.append("... and more literature mentions.")
 
         return "\n".join(lines)
 

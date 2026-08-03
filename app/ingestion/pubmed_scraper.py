@@ -5,6 +5,9 @@ fetch metadata, and download PMC full-text JATS XMLs (or store metadata).
 """
 
 import json
+import os
+import subprocess
+import shutil
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
@@ -50,6 +53,28 @@ class PubMedScraper:
             params["api_key"] = self.api_key
         return params
 
+    def _request_with_retry(self, method: str, url: str, **kwargs) -> requests.Response:
+        """Helper to make HTTP requests with exponential backoff on 429 and network errors."""
+        import time
+        retries = 5
+        backoff = 2.0
+        for i in range(retries):
+            try:
+                if method.upper() == "GET":
+                    response = requests.get(url, **kwargs)
+                else:
+                    response = requests.request(method, url, **kwargs)
+                if response.status_code == 429:
+                    time.sleep(backoff * (2 ** i))
+                    continue
+                response.raise_for_status()
+                return response
+            except requests.RequestException as e:
+                if i == retries - 1:
+                    raise e
+                time.sleep(backoff * (2 ** i))
+        raise requests.RequestException("Max retries exceeded")
+
     def search(self, query: str, max_results: int = 20) -> list[str]:
         """Search PubMed for matching PMIDs.
 
@@ -72,7 +97,7 @@ class PubMedScraper:
             }
         )
 
-        response = requests.get(ESEARCH_URL, params=params, timeout=30)
+        response = self._request_with_retry("GET", ESEARCH_URL, params=params, timeout=30)
         response.raise_for_status()
 
         data = response.json()
@@ -81,7 +106,7 @@ class PubMedScraper:
         return [str(pmid) for pmid in id_list]
 
     def fetch_metadata(self, pmids: list[str]) -> dict[str, dict[str, Any]]:
-        """Fetch article metadata for PMIDs via PubMed esummary API.
+        """Fetch article metadata for PMIDs via PubMed esummary API in batches.
 
         Args:
             pmids: List of PMID strings.
@@ -92,52 +117,60 @@ class PubMedScraper:
         if not pmids:
             return {}
 
-        params = self._build_params(
-            {
-                "db": "pubmed",
-                "id": ",".join(pmids),
-                "retmode": "json",
-            }
-        )
-
-        response = requests.get(ESUMMARY_URL, params=params, timeout=30)
-        response.raise_for_status()
-
-        data = response.json()
-        result_dict = data.get("result", {})
-
+        batch_size = 100
         metadata_by_pmid: dict[str, dict[str, Any]] = {}
-        for pmid in pmids:
-            if pmid not in result_dict or not isinstance(result_dict[pmid], dict):
+
+        for start_idx in range(0, len(pmids), batch_size):
+            batch = pmids[start_idx : start_idx + batch_size]
+            params = self._build_params(
+                {
+                    "db": "pubmed",
+                    "id": ",".join(batch),
+                    "retmode": "json",
+                }
+            )
+
+            try:
+                response = self._request_with_retry("GET", ESUMMARY_URL, params=params, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+            except Exception as e:
+                logger.error("Failed to fetch summary batch starting at index %d: %s", start_idx, e)
                 continue
-            item = result_dict[pmid]
 
-            doi = None
-            pmcid = None
-            article_ids = item.get("articleids", [])
-            for aid in article_ids:
-                if isinstance(aid, dict):
-                    id_type = str(aid.get("idtype", "")).lower()
-                    val = str(aid.get("value", ""))
-                    if id_type == "doi":
-                        doi = val
-                    elif id_type in ("pmc", "pmcid"):
-                        pmcid = val if val.startswith("PMC") else f"PMC{val}"
+            result_dict = data.get("result", {})
 
-            authors = []
-            for author in item.get("authors", []):
-                if isinstance(author, dict) and "name" in author:
-                    authors.append(author["name"])
+            for pmid in batch:
+                if pmid not in result_dict or not isinstance(result_dict[pmid], dict):
+                    continue
+                item = result_dict[pmid]
 
-            metadata_by_pmid[pmid] = {
-                "pmid": pmid,
-                "pmcid": pmcid,
-                "doi": doi,
-                "title": item.get("title", ""),
-                "journal": item.get("source", ""),
-                "publication_date": item.get("pubdate", ""),
-                "authors": authors,
-            }
+                doi = None
+                pmcid = None
+                article_ids = item.get("articleids", [])
+                for aid in article_ids:
+                    if isinstance(aid, dict):
+                        id_type = str(aid.get("idtype", "")).lower()
+                        val = str(aid.get("value", ""))
+                        if id_type == "doi":
+                            doi = val
+                        elif id_type in ("pmc", "pmcid"):
+                            pmcid = val if val.startswith("PMC") else f"PMC{val}"
+
+                authors = []
+                for author in item.get("authors", []):
+                    if isinstance(author, dict) and "name" in author:
+                        authors.append(author["name"])
+
+                metadata_by_pmid[pmid] = {
+                    "pmid": pmid,
+                    "pmcid": pmcid,
+                    "doi": doi,
+                    "title": item.get("title", ""),
+                    "journal": item.get("source", ""),
+                    "publication_date": item.get("pubdate", ""),
+                    "authors": authors,
+                }
 
         return metadata_by_pmid
 
@@ -162,7 +195,7 @@ class PubMedScraper:
         )
 
         try:
-            response = requests.get(EFETCH_URL, params=params, timeout=30)
+            response = self._request_with_retry("GET", EFETCH_URL, params=params, timeout=30)
             if response.status_code != 200:
                 return None
 
@@ -198,7 +231,7 @@ class PubMedScraper:
         )
 
         try:
-            response = requests.get(EFETCH_URL, params=params, timeout=30)
+            response = self._request_with_retry("GET", EFETCH_URL, params=params, timeout=30)
             if response.status_code != 200:
                 return None
 
@@ -218,6 +251,91 @@ class PubMedScraper:
             return " ".join(parts) if parts else None
         except Exception:
             return None
+
+    def fetch_via_paperclip(self, pmid_or_pmcid: str) -> dict[str, Any] | None:
+        """Fetch article metadata and full text from Paperclip CLI as a fallback."""
+        import subprocess
+        import json
+        import shutil
+
+        paper_id = pmid_or_pmcid
+        ids_to_try = [paper_id]
+        if paper_id.isdigit():
+            ids_to_try.append(f"PMC{paper_id}")
+        elif paper_id.startswith("PMC") and paper_id[3:].isdigit():
+            ids_to_try.append(paper_id[3:])
+
+        paperclip_bin = shutil.which("paperclip") or os.path.expanduser("~/.local/bin/paperclip")
+        if not os.path.exists(paperclip_bin):
+            return None
+
+        for pid in ids_to_try:
+            try:
+                # 1. Fetch metadata
+                cmd_meta = [paperclip_bin, "cat", f"/papers/{pid}/meta.json"]
+                res_meta = subprocess.run(cmd_meta, capture_output=True, text=True, timeout=20)
+                if res_meta.returncode != 0:
+                    continue
+
+                meta = json.loads(res_meta.stdout.strip())
+
+                # 2. Fetch sections list and text chunks
+                cmd_sections_ls = [paperclip_bin, "ls", f"/papers/{pid}/sections/"]
+                res_ls = subprocess.run(cmd_sections_ls, capture_output=True, text=True, timeout=20)
+
+                text_chunks = []
+                if res_ls.returncode == 0:
+                    sec_files = res_ls.stdout.strip().split()
+                    for sec_file in sec_files:
+                        if sec_file.endswith(".lines"):
+                            section_name = sec_file[:-6]
+                            cmd_sec_cat = [paperclip_bin, "cat", f"/papers/{pid}/sections/{sec_file}"]
+                            res_sec = subprocess.run(cmd_sec_cat, capture_output=True, text=True, timeout=20)
+                            if res_sec.returncode == 0:
+                                lines = []
+                                for line in res_sec.stdout.splitlines():
+                                    line_clean = line.strip()
+                                    if line_clean.startswith("L") and ":" in line_clean:
+                                        parts = line_clean.split(":", 1)
+                                        if parts[0][1:].isdigit():
+                                            line_clean = parts[1].strip()
+                                    lines.append(line_clean)
+                                text_chunks.append({
+                                    "section": section_name,
+                                    "text": "\n".join(lines)
+                                })
+
+                if not text_chunks:
+                    cmd_content = [paperclip_bin, "cat", f"/papers/{pid}/content.lines"]
+                    res_content = subprocess.run(cmd_content, capture_output=True, text=True, timeout=20)
+                    if res_content.returncode == 0:
+                        lines = []
+                        for line in res_content.stdout.splitlines():
+                            line_clean = line.strip()
+                            if line_clean.startswith("L") and ":" in line_clean:
+                                parts = line_clean.split(":", 1)
+                                if parts[0][1:].isdigit():
+                                    line_clean = parts[1].strip()
+                            lines.append(line_clean)
+                        text_chunks.append({
+                            "section": "FullText",
+                            "text": "\n".join(lines)
+                        })
+
+                return {
+                    "title": meta.get("title") or meta.get("document_title"),
+                    "journal": meta.get("journal") or meta.get("source"),
+                    "doi": meta.get("doi"),
+                    "pmid": meta.get("pmid"),
+                    "pmcid": meta.get("pmc_id") or meta.get("pmcid"),
+                    "pub_date": meta.get("pub_date") or meta.get("published_date"),
+                    "abstract": meta.get("abstract"),
+                    "text_chunks": text_chunks
+                }
+            except Exception:
+                continue
+
+        return None
 
     def scrape(self, query: str, max_results: int = 20) -> dict[str, Any]:
         """Query PubMed, fetch metadata, download PMC XML or store abstract metadata.
@@ -243,6 +361,15 @@ class PubMedScraper:
         metadata_saved = []
 
         for pmid in pmids:
+            xml_path = self.xml_dir / f"{pmid}.xml"
+            meta_path = self.metadata_dir / f"{pmid}.json"
+            if xml_path.exists():
+                xml_saved.append(str(xml_path))
+                continue
+            if meta_path.exists():
+                metadata_saved.append(str(meta_path))
+                continue
+
             meta = metadata_map.get(
                 pmid,
                 {
@@ -260,15 +387,20 @@ class PubMedScraper:
             xml_content = self.fetch_pmc_xml(pmc_id)
 
             if xml_content:
-                xml_path = self.xml_dir / f"{pmid}.xml"
                 xml_path.write_text(xml_content, encoding="utf-8")
                 xml_saved.append(str(xml_path))
             else:
-                abstract = self.fetch_pubmed_abstract(pmid)
-                meta["abstract"] = abstract
-                meta_path = self.metadata_dir / f"{pmid}.json"
-                meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
-                metadata_saved.append(str(meta_path))
+                # Try paperclip fallback first
+                paperclip_data = self.fetch_via_paperclip(pmc_id)
+                if paperclip_data:
+                    meta_path.write_text(json.dumps(paperclip_data, indent=2), encoding="utf-8")
+                    metadata_saved.append(str(meta_path))
+                else:
+                    # Fallback to standard abstract
+                    abstract = self.fetch_pubmed_abstract(pmid)
+                    meta["abstract"] = abstract
+                    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+                    metadata_saved.append(str(meta_path))
 
         return {
             "query": query,

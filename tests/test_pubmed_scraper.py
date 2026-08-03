@@ -129,13 +129,16 @@ def test_fetch_pmc_xml_failure(mock_get: MagicMock, scraper: PubMedScraper) -> N
 @patch.object(PubMedScraper, "fetch_metadata")
 @patch.object(PubMedScraper, "fetch_pmc_xml")
 @patch.object(PubMedScraper, "fetch_pubmed_abstract")
+@patch.object(PubMedScraper, "fetch_via_paperclip")
 def test_scrape_workflow(
+    mock_paperclip: MagicMock,
     mock_abstract: MagicMock,
     mock_xml: MagicMock,
     mock_meta: MagicMock,
     mock_search: MagicMock,
     scraper: PubMedScraper,
 ) -> None:
+    mock_paperclip.return_value = None
     mock_search.return_value = ["38123456", "38123457"]
     mock_meta.return_value = {
         "38123456": {
@@ -204,3 +207,34 @@ def test_cli_main(
     main()
 
     mock_scrape.assert_called_once_with("EBV", max_results=5)
+
+
+@patch("subprocess.run")
+@patch("os.path.exists")
+@patch("shutil.which")
+def test_fetch_via_paperclip_success(
+    mock_which: MagicMock, mock_exists: MagicMock, mock_run: MagicMock, scraper: PubMedScraper
+) -> None:
+    mock_which.return_value = "/usr/local/bin/paperclip"
+    mock_exists.return_value = True
+
+    # Setup subprocess.run mock returns:
+    # 1. metadata
+    # 2. ls /sections
+    # 3. section 1 content
+    # 4. section 2 content
+    mock_res_meta = MagicMock(returncode=0, stdout='{"title": "PC Title", "doi": "10.123", "abstract": "PC Abs"}')
+    mock_res_ls = MagicMock(returncode=0, stdout="Intro.lines Methods.lines")
+    mock_res_sec1 = MagicMock(returncode=0, stdout="L1: Intro text line 1\nL2: Intro text line 2")
+    mock_res_sec2 = MagicMock(returncode=0, stdout="L1: Methods text")
+
+    mock_run.side_effect = [mock_res_meta, mock_res_ls, mock_res_sec1, mock_res_sec2]
+
+    res = scraper.fetch_via_paperclip("PMC12345")
+    assert res is not None
+    assert res["title"] == "PC Title"
+    assert res["doi"] == "10.123"
+    assert len(res["text_chunks"]) == 2
+    assert res["text_chunks"][0]["section"] == "Intro"
+    assert res["text_chunks"][0]["text"] == "Intro text line 1\nIntro text line 2"
+

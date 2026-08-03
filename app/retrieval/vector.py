@@ -1,9 +1,12 @@
 """LanceDB Vector Store Client for storing and querying document chunk embeddings."""
 
 import os
+import logging
 from typing import Any, Dict, List, Optional
 import lancedb
 import pyarrow as pa
+
+logger = logging.getLogger(__name__)
 
 
 class LanceDBClient:
@@ -53,6 +56,29 @@ class LanceDBClient:
             lancedb.table.Table: The opened or created table.
         """
         db = self.connect()
+        tables = db.list_tables()
+        if not isinstance(tables, list):
+            tables = getattr(tables, "tables", tables)
+
+        if self.table_name in tables:
+            try:
+                table = db.open_table(self.table_name)
+                existing_schema = table.schema
+                if "vector" in existing_schema.names:
+                    vector_field = existing_schema.field("vector")
+                    list_size = getattr(vector_field.type, "list_size", None)
+                    if list_size is None and hasattr(vector_field.type, "value_length"):
+                        list_size = vector_field.type.value_length
+                    
+                    if list_size is not None and list_size != self.vector_dim:
+                        logger.warning(
+                            "LanceDB table vector dimension mismatch (existing: %s, requested: %s). Dropping table to recreate.",
+                            str(list_size),
+                            str(self.vector_dim)
+                        )
+                        db.drop_table(self.table_name)
+            except Exception as e:
+                logger.warning("Error checking existing table schema: %s", e)
 
         # Define schema for chunks using pyarrow
         schema = pa.schema(

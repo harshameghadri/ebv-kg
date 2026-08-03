@@ -25,7 +25,7 @@ def test_client_init():
     """Verify that EmbeddingClient initializes with correct defaults and environment variables."""
     # Test default initialization
     client = EmbeddingClient()
-    assert client.model_name == "all-MiniLM-L6-v2"
+    assert client.model_name == "allenai/specter2"
     assert client._device is None
     assert client._model is None
     assert client._flag_model is None

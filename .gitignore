@@ -1,0 +1,49 @@
+# Environment and Secrets
+.env
+.env.*
+*.env
+
+# Data & Staging Directories
+data/
+data/**
+data_old/
+data_staging/
+scratch/
+scratch/**
+*.db
+*.sqlite
+*.sqlite3
+*.h5ad
+*.tar.gz
+*.jar
+*.xml
+*.json
+
+# Virtual Environments
+ebv_KG_venv/
+venv/
+env/
+.venv/
+ENV/
+
+# Python Cache & Artifacts
+__pycache__/
+/**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+*.so
+
+# Logs, OS & Temporary Files
+*.log
+.DS_Store
+._*
+/**/._*
+/**/.DS_Store
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
