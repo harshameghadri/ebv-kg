@@ -175,4 +175,5 @@ pytest tests/ -v
 
 ## 📜 License
 
-This project is released under the **MIT License**. See [LICENSE](LICENSE) for details.
+This project is licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)**. Personal, educational, and academic research use is permitted; commercial use is restricted.
+
