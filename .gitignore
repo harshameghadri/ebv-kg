@@ -1,3 +1,15 @@
+# Internal Agent Documentation & Working Specs
+GEMINI.md
+AgentBehavior.md
+Handover.md
+Kanban.md
+master_ebv_system_spec.md
+multiscale_kg_schema_proposal.md
+ebv_core_knowledge_system_spec.md
+benchmark_and_innovations.md
+ebv_kg_project_health_report.md
+technical_challenges.md
+
 # Environment and Secrets
 .env
 .env.*
