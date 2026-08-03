@@ -9,6 +9,8 @@ ebv_core_knowledge_system_spec.md
 benchmark_and_innovations.md
 ebv_kg_project_health_report.md
 technical_challenges.md
+ebv-rag-engineering-doc-v2.md
+ebv-rag-engineering-spec.md
 
 # Environment and Secrets
 .env
