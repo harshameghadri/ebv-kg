@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Direction 1: Cyber-Bio Synth</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;600&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #04060A;
+            --neon-cyan: #00F2FE;
+            --neon-purple: #9B5DE5;
+            --neon-pink: #FF007F;
+            --neon-green: #00F5D4;
+            --glass: rgba(12, 17, 29, 0.75);
+            --border: rgba(0, 242, 254, 0.2);
+            --text: #F8FAFC;
+            --muted: #64748B;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(155, 93, 229, 0.25) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 242, 254, 0.25) 0px, transparent 50%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .badge {
+            background: rgba(0, 242, 254, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+        }
+
+        .hero-banner {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 40px rgba(0, 242, 254, 0.1);
+        }
+        .search-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .search-input {
+            flex: 1;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            color: #fff;
+            font-size: 1.1rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .btn-synth {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            color: #000;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            padding: 0 2rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .chips {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .chip {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--muted);
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .chip:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            min-height: 400px;
+        }
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            color: var(--neon-cyan);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Mock Cyber Visualizer */
+        .radar-box {
+            height: 320px;
+            background: radial-gradient(circle, rgba(0,242,254,0.1) 0%, transparent 70%);
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .radar-node {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+        .n-1 { top: 30%; left: 40%; background: var(--neon-purple); box-shadow: 0 0 15px var(--neon-purple); }
+        .n-2 { top: 60%; left: 70%; background: var(--neon-pink); box-shadow: 0 0 15px var(--neon-pink); }
+        .n-3 { top: 75%; left: 25%; background: var(--neon-green); box-shadow: 0 0 15px var(--neon-green); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">⚡ EBV SYNTH-KNOWLEDGE</div>
+        <div class="badge">DIRECTION 1: CYBER-BIO SYNTH</div>
+    </div>
+
+    <div class="hero-banner">
+        <h2>Multi-Scale Cybernetic RAG Console</h2>
+        <p style="color: var(--muted); margin-top: 0.4rem;">Traverse 13,043 literature vectors and 752.9k knowledge graph triples in real-time.</p>
+
+        <div class="search-row">
+            <input type="text" class="search-input" value="How does LMP1 activate NF-kB signaling and evade apoptosis in Burkitt Lymphoma?">
+            <button class="btn-synth">EXECUTE SYNTHESIS</button>
+        </div>
+
+        <div class="chips">
+            <div class="chip">🧬 LMP1 CTAR1 Domain</div>
+            <div class="chip">🧠 EBNA1 GlialCAM Cross-Reactivity</div>
+            <div class="chip">💊 Withaferin A & SCD1 Targets</div>
+            <div class="chip">🔬 Atypical Memory B Cells</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="card-title">
+                <span>🤖 AI SYNTHESIZED ANSWER</span>
+                <span style="color: var(--neon-green); font-size: 0.9rem;">CONFIDENCE: 96.4%</span>
+            </div>
+            <p style="line-height: 1.7; color: #CBD5E1;">
+                LMP1 acts as a constitutively active tumor necrosis factor receptor (TNFR) homologue. Through its cytoplasmic C-terminal activating region 1 (CTAR1), it directly recruits TRAF1, TRAF2, TRAF3, and TRAF5, driving canonical NF-kB transactivation without requiring ligand binding [DOI:10.1182/blood.2025029771].
+            </p>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>🕸️ SPOKE KINETIC RADAR CANVAS</span>
+                <span style="color: var(--muted); font-size: 0.9rem;">COSE LAYOUT</span>
+            </div>
+            <div class="radar-box">
+                <div class="radar-node" style="top: 45%; left: 48%;"></div>
+                <div class="radar-node n-1"></div>
+                <div class="radar-node n-2"></div>
+                <div class="radar-node n-3"></div>
+                <span style="font-family: 'Fira Code', monospace; color: var(--neon-cyan); font-size: 0.85rem;">[CYTOSCAPE.JS KINETIC GRAPH RENDER]</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

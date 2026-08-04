@@ -11,6 +11,8 @@ ebv_kg_project_health_report.md
 technical_challenges.md
 ebv-rag-engineering-doc-v2.md
 ebv-rag-engineering-spec.md
+substack/
+
 
 # Environment and Secrets
 .env

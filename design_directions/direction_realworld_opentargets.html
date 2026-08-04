@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EBV Knowledge System | Open Targets & Nextstrain Style</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F8FAFC;
+            --surface: #FFFFFF;
+            --border: #E2E8F0;
+            --border-dark: #CBD5E1;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --brand-blue: #1E40AF;
+            --brand-blue-light: #EFF6FF;
+            --accent-cyan: #0284C7;
+            --accent-emerald: #059669;
+            --accent-amber: #D97706;
+            --accent-purple: #6D28D9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* Top Navigation Header (Open Targets / EBI Style) */
+        .top-bar {
+            background: #0F172A;
+            color: #FFFFFF;
+            padding: 0.75rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1E293B;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: -0.3px;
+        }
+        .brand-badge {
+            background: #1E3A8A;
+            color: #93C5FD;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .sys-telemetry {
+            display: flex;
+            gap: 1.25rem;
+            font-size: 0.8rem;
+            color: #94A3B8;
+        }
+        .telemetry-item span {
+            color: #F8FAFC;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Search Header (Light Mode Benchmark) */
+        .search-container {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+        }
+        .search-box-row {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .search-input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border-dark);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+        .btn-search {
+            background: var(--brand-blue);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+            padding: 0 1.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .btn-search:hover { background: #1D4ED8; }
+
+        .preset-prompts {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 1200px;
+            margin: 0.75rem auto 0 auto;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .prompt-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .prompt-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .prompt-btn:hover {
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
+            background: var(--brand-blue-light);
+        }
+
+        /* Workspace 3-Column Layout */
+        .workspace {
+            max-width: 1600px;
+            margin: 1.5rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 280px 1fr 420px;
+            gap: 1.5rem;
+        }
+
+        /* Left Column: Faceted Filters (Pharos / Open Targets style) */
+        .filter-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        .filter-section-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .filter-group {
+            margin-bottom: 1.25rem;
+        }
+        .filter-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .filter-select, .filter-input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 0.45rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+        .checkbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Center Column: Synthesized Evidence & Provenance */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+        .evidence-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        .evidence-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .evidence-card-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        .confidence-chip {
+            background: #ECFDF5;
+            color: #047857;
+            border: 1px solid #A7F3D0;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .summary-body {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.25rem;
+        }
+
+        /* Structured Triples Table */
+        .triples-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+        .triples-table th, .triples-table td {
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+        .triples-table th {
+            background: var(--bg);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .entity-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+        }
+        .tag-gene { background: #E0F2FE; color: #0369A1; }
+        .tag-disease { background: #FCE7F3; color: #BE185D; }
+        .tag-cell { background: #D1FAE5; color: #047857; }
+
+        /* Right Column: Network Visualizer & Inspector (Nextstrain style) */
+        .visualizer-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .graph-viewport {
+            height: 380px;
+            background: #F1F5F9;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .inspector-panel {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            font-size: 0.85rem;
+        }
+        .inspector-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar (Open Targets / EBI Style) -->
+    <div class="top-bar">
+        <div class="brand">
+            EBV KNOWLEDGE SYSTEM
+            <span class="brand-badge">Open Targets Model</span>
+        </div>
+        <div class="sys-telemetry">
+            <div class="telemetry-item">PMC Papers: <span>13,043</span></div>
+            <div class="telemetry-item">Vector Chunks: <span>231,949</span></div>
+            <div class="telemetry-item">Neo4j Edges: <span>1,868</span></div>
+            <div class="telemetry-item">Status: <span style="color: #34D399;">● Online</span></div>
+        </div>
+    </div>
+
+    <!-- Search Header -->
+    <div class="search-container">
+        <div class="search-box-row">
+            <input type="text" class="search-input" value="What is the molecular mimicry mechanism between EBNA1 and GlialCAM in Multiple Sclerosis?">
+            <button class="btn-search">Search Evidence</button>
+        </div>
+        <div class="preset-prompts">
+            <span class="prompt-label">Target Queries:</span>
+            <a href="#" class="prompt-btn">EBNA1 ➔ GlialCAM Cross-Reactivity</a>
+            <a href="#" class="prompt-btn">LMP1 ➔ NF-kB Signalling</a>
+            <a href="#" class="prompt-btn">Withaferin A ➔ SCD1 Downregulation</a>
+            <a href="#" class="prompt-btn">Atypical B Cells in PTLD</a>
+        </div>
+    </div>
+
+    <!-- 3-Column Workspace -->
+    <div class="workspace">
+        
+        <!-- Left: Faceted Filter Drawer -->
+        <div class="filter-card">
+            <div class="filter-section-title">Evidence Filters</div>
+            
+            <div class="filter-group">
+                <label for="conf">Min Edge Confidence</label>
+                <select id="conf" class="filter-select">
+                    <option value="0.80" selected>≥ 0.80 (High Confidence)</option>
+                    <option value="0.70">≥ 0.70 (Medium Confidence)</option>
+                    <option value="0.50">≥ 0.50 (All Candidate Edges)</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="hops">Multi-Hop Traversal</label>
+                <select id="hops" class="filter-select">
+                    <option value="1">1-Hop Direct Targets</option>
+                    <option value="2" selected>2-Hop SPOKE Neighborhood</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Entity Classes</label>
+                <div class="checkbox-list">
+                    <label><input type="checkbox" checked> Gene / Protein (HGNC)</label>
+                    <label><input type="checkbox" checked> Viral Gene (EBV)</label>
+                    <label><input type="checkbox" checked> Cell State (AnnData)</label>
+                    <label><input type="checkbox" checked> Disease Outcome</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Evidence & RAG Synthesis -->
+        <div class="main-content">
+            
+            <div class="evidence-card">
+                <div class="evidence-card-header">
+                    <div class="evidence-card-title">Synthesized Literature Evidence</div>
+                    <div class="confidence-chip">Confidence: 96.2%</div>
+                </div>
+                <div class="summary-body">
+                    High-throughput peptide microarrays demonstrate structural homology between EBV nuclear antigen <b>EBNA1 (residues 385–420)</b> and human <b>GlialCAM (residues 370–400)</b> in CNS myelin sheaths. In HLA-DRB1*15:01 individuals, somatic hypermutation produces cross-reactive autoantibodies driving neuro-demyelination [DOI:10.1038/s41586-022-04432-d].
+                </div>
+
+                <div class="evidence-card-title" style="font-size: 0.9rem; margin-bottom: 0.5rem;">Pruned Subgraph Triples</div>
+                <table class="triples-table">
+                    <thead>
+                        <tr>
+                            <th>Subject Entity</th>
+                            <th>Predicate</th>
+                            <th>Object Entity</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="entity-tag tag-gene">EBNA1</span></td>
+                            <td style="color: var(--text-secondary);">CROSS_REACTS_WITH</td>
+                            <td><span class="entity-tag tag-gene">GlialCAM</span></td>
+                            <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-emerald);">0.96</td>
+                        </tr>
+                        <tr>
+                            <td><span class="entity-tag tag-gene">GlialCAM</span></td>
+                            <td style="color: var(--text-secondary);">LOCATED_IN</td>
+                            <td><span class="entity-tag tag-cell">Oligodendrocyte</span></td>
+                            <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-emerald);">0.92</td>
+                        </tr>
+                        <tr>
+                            <td><span class="entity-tag tag-cell">Oligodendrocyte</span></td>
+                            <td style="color: var(--text-secondary);">ASSOCIATED_WITH</td>
+                            <td><span class="entity-tag tag-disease">Multiple Sclerosis</span></td>
+                            <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-emerald);">0.95</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <!-- Right: Network Visualizer & Inspector (Nextstrain style) -->
+        <div class="visualizer-card">
+            <div class="evidence-card-title">Subnetwork Topology</div>
+            <div class="graph-viewport">
+                [ CYTOSCAPE.JS NETWORK CANVAS ]
+            </div>
+            
+            <div class="inspector-panel">
+                <div class="inspector-title">Selected Entity: EBNA1</div>
+                <div style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5;">
+                    <p><b>Type:</b> VIRAL_GENE</p>
+                    <p><b>Sequence Residues:</b> 385–420 (Cross-Reactive Epitope)</p>
+                    <p><b>Citations:</b> Lanz et al. (Nature 2022)</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

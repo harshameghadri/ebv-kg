@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EBV Knowledge System | Linear & Vercel Slate Style</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0B0F17;
+            --bg-surface: #111827;
+            --bg-elevated: #1F2937;
+            --border-subtle: #1F2937;
+            --border-strong: #374151;
+            --text-primary: #F9FAFB;
+            --text-secondary: #9CA3AF;
+            --text-tertiary: #6B7280;
+            --accent-blue: #38BDF8;
+            --accent-green: #34D399;
+            --accent-amber: #FBBF24;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, sans-serif;
+            font-size: 13px;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* Linear Navigation Header */
+        .nav-header {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .breadcrumbs {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .breadcrumbs .active { color: var(--text-primary); font-weight: 600; }
+        .divider { color: var(--text-tertiary); }
+
+        .telemetry-pills {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .pill {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-strong);
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .pill span { color: var(--text-primary); font-weight: 600; }
+
+        /* Search Section */
+        .search-wrapper {
+            max-width: 1400px;
+            margin: 1.5rem auto 0 auto;
+            padding: 0 1.5rem;
+        }
+        .search-bar {
+            display: flex;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            padding: 0.4rem;
+        }
+        .search-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0.6rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        .search-bar input:focus { outline: none; }
+        .btn-exec {
+            background: var(--accent-blue);
+            color: #000;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            padding: 0 1.25rem;
+            cursor: pointer;
+        }
+
+        /* Dual Pane Content Grid */
+        .pane-grid {
+            max-width: 1400px;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .pane {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .pane-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0.75rem;
+        }
+
+        .synthesized-text {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .triple-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .triple-row {
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            padding: 0.6rem 0.8rem;
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .canvas-container {
+            height: 420px;
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            font-family: var(--mono);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nav-header">
+        <div class="breadcrumbs">
+            <span>ebv-kg</span>
+            <span class="divider">/</span>
+            <span>graph-rag</span>
+            <span class="divider">/</span>
+            <span class="active">query-console</span>
+        </div>
+        <div class="telemetry-pills">
+            <div class="pill">docs: <span>13,043</span></div>
+            <div class="pill">vectors: <span>231.9k</span></div>
+            <div class="pill">edges: <span>1,868</span></div>
+        </div>
+    </div>
+
+    <div class="search-wrapper">
+        <div class="search-bar">
+            <input type="text" value="How does LMP1 activate NF-kB signaling and evade apoptosis in Burkitt Lymphoma?">
+            <button class="btn-exec">Run Query</button>
+        </div>
+    </div>
+
+    <div class="pane-grid">
+        
+        <div class="pane">
+            <div class="pane-title">
+                <span>Synthesized Response</span>
+                <span style="color: var(--accent-green); font-family: var(--mono);">score: 0.962</span>
+            </div>
+            <div class="synthesized-text">
+                LMP1 mimics TNF receptor signaling via its cytoplasmic CTAR1 domain, binding TRAF proteins to drive constitutive NF-kB transactivation without ligand engagement [DOI:10.1182/blood.2025029771].
+            </div>
+
+            <div class="pane-title" style="margin-top: 0.5rem;">SPOKE Pruned Graph Triples</div>
+            <div class="triple-list">
+                <div class="triple-row">
+                    <span style="color: var(--accent-blue);">LMP1 ➔ TARGETS ➔ TRAF2</span>
+                    <span style="color: var(--accent-green);">0.94</span>
+                </div>
+                <div class="triple-row">
+                    <span style="color: var(--accent-blue);">TRAF2 ➔ EXPRESSES ➔ NFKB1</span>
+                    <span style="color: var(--accent-green);">0.91</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pane">
+            <div class="pane-title">
+                <span>2-Hop Subgraph Topology</span>
+                <span style="color: var(--text-tertiary); font-family: var(--mono);">cose-layout</span>
+            </div>
+            <div class="canvas-container">
+                [ CYTOSCAPE.JS NETWORK CANVAS ]
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

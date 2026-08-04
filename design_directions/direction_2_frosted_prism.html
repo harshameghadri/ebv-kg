@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Direction 2: Frosted Prism & Emerald Bio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #070D19 0%, #0F172A 50%, #061121 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-card: rgba(15, 23, 42, 0.65);
+            --border-glow: rgba(0, 245, 212, 0.25);
+            --accent-emerald: #00F5D4;
+            --accent-blue: #38BDF8;
+            --accent-purple: #A855F7;
+            --text-main: #F8FAFC;
+            --text-sub: #94A3B8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            padding: 2.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+        .brand-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .brand-title span {
+            color: var(--accent-emerald);
+        }
+        .dir-tag {
+            background: rgba(0, 245, 212, 0.1);
+            border: 1px solid var(--accent-emerald);
+            color: var(--accent-emerald);
+            padding: 0.5rem 1.2rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Glass Floating Search Console */
+        .search-console {
+            background: var(--glass-card);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            margin-bottom: 2rem;
+        }
+        .input-bar {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .search-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 1.2rem 1.5rem;
+            color: #fff;
+            font-size: 1rem;
+        }
+        .btn-query {
+            background: var(--accent-emerald);
+            color: #0F172A;
+            font-weight: 700;
+            padding: 0 2rem;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(0, 245, 212, 0.3);
+        }
+
+        /* Split View */
+        .split-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        .glass-panel {
+            background: var(--glass-card);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 2rem;
+            min-height: 450px;
+        }
+        .panel-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pill-tag {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-blue);
+            padding: 0.35rem 0.8rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .mock-graph-canvas {
+            height: 340px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-sub);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="brand-title">EBV <span>Prism Knowledge</span></div>
+        <div class="dir-tag">DIRECTION 2: FROSTED PRISM & EMERALD BIO</div>
+    </div>
+
+    <div class="search-console">
+        <h2 style="font-size: 1.5rem; font-weight: 700;">Explore Biomolecular Evidence</h2>
+        <p style="color: var(--text-sub); margin-top: 0.3rem;">Query single-cell transcriptomics & literature graphs with spatial precision.</p>
+
+        <div class="input-bar">
+            <input type="text" class="search-input" value="What is the molecular mimicry mechanism between EBNA1 and GlialCAM in Multiple Sclerosis?">
+            <button class="btn-query">SEARCH PRISM</button>
+        </div>
+    </div>
+
+    <div class="split-container">
+        <div class="glass-panel">
+            <div class="panel-header">
+                <span>Synthesized Research Evidence</span>
+                <span class="pill-tag">High Confidence</span>
+            </div>
+            <p style="line-height: 1.8; color: #CBD5E1;">
+                High-throughput peptide microarrays demonstrate structural homology between EBV nuclear antigen <b>EBNA1 (residues 385–420)</b> and human <b>GlialCAM (residues 370–400)</b> in CNS myelin sheaths. In HLA-DRB1*15:01 individuals, somatic hypermutation produces cross-reactive autoantibodies driving neuro-demyelination [DOI:10.1038/s41586-022-04432-d].
+            </p>
+        </div>
+
+        <div class="glass-panel">
+            <div class="panel-header">
+                <span>Spatial Graph Topology</span>
+                <span style="color: var(--text-sub); font-size: 0.85rem;">2-Hop Pruned Subgraph</span>
+            </div>
+            <div class="mock-graph-canvas">
+                [ FROSTED PRISM CANVAS — CYTOSCAPE.JS RENDER ]
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

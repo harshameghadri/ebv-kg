@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Direction 4: Spatial Graph-First Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #030712;
+            --hud-bg: rgba(17, 24, 39, 0.85);
+            --hud-border: rgba(255, 255, 255, 0.12);
+            --primary-glow: #00F2FE;
+            --accent-purple: #9B5DE5;
+            --accent-pink: #FF007F;
+            --text-light: #F9FAFB;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-canvas);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-light);
+        }
+
+        /* Mock Fullscreen Canvas */
+        .spatial-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 242, 254, 0.08) 0%, transparent 60%),
+                radial-gradient(circle at 20% 30%, rgba(155, 93, 229, 0.08) 0%, transparent 50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Mock Graph Nodes Floating in Spatial Canvas */
+        .spatial-node {
+            position: absolute;
+            padding: 0.8rem 1.4rem;
+            border-radius: 9999px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            border: 2px solid;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .spatial-node:hover { transform: scale(1.1); }
+
+        .node-ebna1 { top: 35%; left: 35%; background: rgba(0, 242, 254, 0.2); border-color: #00F2FE; color: #00F2FE; box-shadow: 0 0 25px rgba(0, 242, 254, 0.5); }
+        .node-glialcam { top: 35%; left: 60%; background: rgba(255, 0, 127, 0.2); border-color: #FF007F; color: #FF007F; box-shadow: 0 0 25px rgba(255, 0, 127, 0.5); }
+        .node-ms { top: 60%; left: 50%; background: rgba(155, 93, 229, 0.2); border-color: #9B5DE5; color: #9B5DE5; box-shadow: 0 0 25px rgba(155, 93, 229, 0.5); }
+
+        /* Floating Query HUD Header */
+        .floating-header {
+            position: absolute;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 900px;
+            background: var(--hud-bg);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--hud-border);
+            border-radius: 20px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            z-index: 10;
+        }
+        .spatial-search {
+            flex: 1;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+        .spatial-btn {
+            background: linear-gradient(135deg, #00F2FE, #9B5DE5);
+            color: #000;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        /* Floating Bottom Inspector Drawer */
+        .floating-drawer {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1000px;
+            background: var(--hud-bg);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--hud-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            z-index: 10;
+        }
+
+        .dir-pill {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(155, 93, 229, 0.2);
+            border: 1px solid #9B5DE5;
+            color: #9B5DE5;
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dir-pill">DIRECTION 4: SPATIAL GRAPH-FIRST CANVAS</div>
+
+    <div class="spatial-canvas">
+        <div class="spatial-node node-ebna1">VIRAL_GENE: EBNA1</div>
+        <div class="spatial-node node-glialcam">PROTEIN: GlialCAM</div>
+        <div class="spatial-node node-ms">DISEASE: Multiple Sclerosis</div>
+    </div>
+
+    <!-- Floating Top Search Bar -->
+    <div class="floating-header">
+        <span style="font-family: 'Outfit'; font-weight: 800; color: #00F2FE; font-size: 1.2rem;">EBV-SPATIAL</span>
+        <input type="text" class="spatial-search" value="What is the molecular mimicry mechanism between EBNA1 and GlialCAM in MS?">
+        <button class="spatial-btn">EXPLORE GRAPH</button>
+    </div>
+
+    <!-- Floating Bottom Details Drawer -->
+    <div class="floating-drawer">
+        <h4 style="font-family: 'Outfit'; color: #00F2FE; margin-bottom: 0.5rem;">🤖 Synthesized Evidence & Spatial Triples</h4>
+        <p style="line-height: 1.6; color: #E2E8F0; font-size: 0.9rem;">
+            EBNA1 residues 385–420 cross-react with human GlialCAM in CNS myelin sheaths. In HLA-DRB1*15:01 individuals, somatic hypermutation produces autoantibodies driving neuro-demyelination [DOI:10.1038/s41586-022-04432-d].
+        </p>
+    </div>
+
+</body>
+</html>

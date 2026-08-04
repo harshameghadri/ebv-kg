@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EBV Knowledge System | NIH Pharos & Bio-Workbench Style</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #F3F4F6;
+            --header-bg: #1E293B;
+            --card-bg: #FFFFFF;
+            --border-color: #E5E7EB;
+            --text-dark: #1F2937;
+            --text-muted: #6B7280;
+            --nih-blue: #0284C7;
+            --nih-navy: #0F172A;
+            --green-badge: #15803D;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-dark);
+            font-family: 'Roboto', sans-serif;
+            font-size: 13px;
+            line-height: 1.4;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--nih-navy);
+            color: #FFFFFF;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .nih-badge {
+            background: #0284C7;
+            color: #FFFFFF;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-weight: 700;
+        }
+
+        .search-strip {
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 2rem;
+        }
+        .search-flex {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            gap: 1rem;
+        }
+        .input-text {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        .btn-pharos {
+            background: var(--nih-blue);
+            color: #FFFFFF;
+            font-weight: 700;
+            border: none;
+            padding: 0 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 1.5rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 260px 1fr 340px;
+            gap: 1.25rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1.25rem;
+        }
+        .card-header {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--nih-navy);
+            border-bottom: 2px solid var(--nih-blue);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th, td {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+        th { background: #F8FAFC; color: var(--text-muted); font-weight: 700; }
+        .mono { font-family: 'Roboto Mono', monospace; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">
+            EBV KNOWLEDGE SYSTEM
+            <span class="nih-badge">NIH PHAROS WORKBENCH MODEL</span>
+        </div>
+        <div style="font-family: 'Roboto Mono'; font-size: 0.8rem; color: #94A3B8;">
+            Papers: 13,043 | Chunks: 231,949 | Graph Edges: 1,868
+        </div>
+    </div>
+
+    <div class="search-strip">
+        <div class="search-flex">
+            <input type="text" class="input-text" value="Which metabolic enzymes (SCD1) are targeted by Withaferin A in EBV-transformed B cells?">
+            <button class="btn-pharos">Execute Search</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        
+        <div class="card">
+            <div class="card-header">Faceted Filters</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">
+                <p style="margin-bottom: 0.8rem;"><b>Min Confidence:</b> ≥ 0.80</p>
+                <p style="margin-bottom: 0.8rem;"><b>Traversal Hops:</b> 2-Hop SPOKE</p>
+                <p><b>Target Types:</b> GENE, COMPOUND, CELL_STATE</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span>Biological Evidence Summary</span>
+                <span style="color: var(--green-badge); font-family: 'Roboto Mono';">Conf: 94.2%</span>
+            </div>
+            <p style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 1rem;">
+                Withaferin A selectively downregulates fatty acid desaturase <b>SCD1</b> expression in EBV-transformed B lymphocytes, clearing lipid droplet reserves and inducing mitochondrial apoptosis [DOI:10.1182/blood.2025029771].
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Predicate</th>
+                        <th>Object</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="mono" style="color: #0284C7;">Withaferin A</td>
+                        <td>INHIBITS</td>
+                        <td class="mono" style="color: #15803D;">SCD1</td>
+                        <td class="mono">0.94</td>
+                    </tr>
+                    <tr>
+                        <td class="mono" style="color: #0284C7;">SCD1</td>
+                        <td>IS_MARKER_FOR</td>
+                        <td class="mono" style="color: #15803D;">Atypical B Cell</td>
+                        <td class="mono">0.91</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">PubMed Citation Inspector</div>
+            <div style="font-size: 0.85rem; color: var(--text-dark); line-height: 1.5;">
+                <p style="font-weight: 700; margin-bottom: 0.3rem;">Blood (2025)</p>
+                <p style="color: var(--text-muted); margin-bottom: 0.5rem;">DOI: 10.1182/blood.2025029771</p>
+                <p style="background: #F8FAFC; padding: 0.6rem; border: 1px solid var(--border-color); font-size: 0.8rem;">
+                    "Inhibition of SCD1 disrupts lipid droplet homeostasis and selectively sensitizes EBV-driven lymphoblastoid cells to apoptosis..."
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

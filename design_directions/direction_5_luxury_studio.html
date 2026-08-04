@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Direction 5: Executive Bio-Studio & Amber Gold</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-slate: #0B132B;
+            --panel-slate: #1C2541;
+            --border-amber: rgba(245, 158, 11, 0.25);
+            --amber-gold: #F59E0B;
+            --amber-glow: rgba(245, 158, 11, 0.15);
+            --text-gold: #FDE68A;
+            --text-light: #F8FAFC;
+            --text-muted: #94A3B8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-slate);
+            color: var(--text-light);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            padding: 2.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-amber);
+            margin-bottom: 2.5rem;
+        }
+        .studio-logo {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 2rem;
+            letter-spacing: 1px;
+            color: var(--amber-gold);
+        }
+        .dir-badge {
+            background: var(--amber-glow);
+            border: 1px solid var(--amber-gold);
+            color: var(--text-gold);
+            padding: 0.5rem 1.2rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .hero-card {
+            background: var(--panel-slate);
+            border: 1px solid var(--border-amber);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+        .hero-card h2 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.8rem;
+            color: var(--text-gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .search-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .search-input {
+            flex: 1;
+            background: rgba(11, 19, 43, 0.8);
+            border: 1px solid var(--border-amber);
+            border-radius: 10px;
+            padding: 1.2rem;
+            color: #fff;
+            font-size: 1rem;
+        }
+        .btn-exec {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            color: #000;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 0 2rem;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--amber-glow);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        .executive-panel {
+            background: var(--panel-slate);
+            border: 1px solid var(--border-amber);
+            border-radius: 16px;
+            padding: 2rem;
+            min-height: 400px;
+        }
+        .panel-header {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--amber-gold);
+            border-bottom: 1px solid var(--border-amber);
+            padding-bottom: 0.8rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="studio-logo">EBV KNOWLEDGE STUDIO</div>
+        <div class="dir-badge">DIRECTION 5: EXECUTIVE BIO-STUDIO & AMBER GOLD</div>
+    </div>
+
+    <div class="hero-card">
+        <h2>Executive Research & Intelligence Briefing</h2>
+        <p style="color: var(--text-muted);">Multi-scale knowledge synthesis platform for Epstein-Barr Virus oncology & autoimmunity R&D.</p>
+
+        <div class="search-group">
+            <input type="text" class="search-input" value="Which metabolic enzymes (SCD1) are targeted by Withaferin A in EBV-transformed B cells?">
+            <button class="btn-exec">SYNTHESIZE BRIEFING</button>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="executive-panel">
+            <div class="panel-header">
+                <span>Executive Summary</span>
+                <span style="font-size: 0.85rem; color: var(--text-gold);">Conf: 94.2%</span>
+            </div>
+            <p style="line-height: 1.8; color: var(--text-light); font-size: 0.95rem;">
+                Withaferin A selectively inhibits fatty acid desaturase <b>SCD1</b> expression in EBV-transformed cells, clearing lipid droplet reserves and triggering apoptosis in atypical memory B-cell niches [DOI:10.1182/blood.2025029771].
+            </p>
+        </div>
+
+        <div class="executive-panel">
+            <div class="panel-header">
+                <span>Targeted Pathway Architecture</span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Interactive Graph</span>
+            </div>
+            <div style="height: 280px; background: rgba(11, 19, 43, 0.6); border-radius: 12px; border: 1px dashed var(--border-amber); display: flex; align-items: center; justify-content: center; color: var(--text-gold); font-family: 'Cinzel'; font-size: 0.9rem;">
+                [ EXECUTIVE GRAPH WORKBENCH — CYTOSCAPE.JS ]
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EBV Knowledge System | Industry-Standard UI Benchmarks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F8FAFC;
+            --surface: #FFFFFF;
+            --border: #E2E8F0;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --brand-blue: #1E40AF;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, sans-serif;
+            padding: 3rem 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 3rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1.5rem;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--brand-blue);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-launch {
+            display: block;
+            text-align: center;
+            background: var(--text-primary);
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .btn-launch:hover {
+            background: var(--brand-blue);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🏛️ Real-World Biomedical UI Benchmarks</h1>
+        <p>Grounded design directions modeled directly on top-tier production platforms (*Open Targets*, *Nextstrain*, *NIH Pharos*, and *Linear*).</p>
+    </div>
+
+    <div class="grid">
+
+        <!-- Real World Benchmark 1 -->
+        <div class="card">
+            <div>
+                <div class="card-tag">Benchmark 01 — EBI / Open Targets & Nextstrain</div>
+                <div class="card-title">Clean Light Scientific Workbench</div>
+                <div class="card-desc">Off-white backdrop (#F8FAFC), deep navy header, faceted evidence filters, structured data tables, and high-contrast subnetwork viewer. Modelled on EMBL-EBI Open Targets and Nextstrain.org.</div>
+            </div>
+            <a href="direction_realworld_opentargets.html" class="btn-launch">Open Benchmark 1 ➔</a>
+        </div>
+
+        <!-- Real World Benchmark 2 -->
+        <div class="card">
+            <div>
+                <div class="card-tag">Benchmark 02 — Linear & Vercel Slate</div>
+                <div class="card-title">Minimalist Dark Engineering Slate</div>
+                <div class="card-desc">Ultra-clean dark slate (#0B0F17), 1px border dividers (#1E293B), breadcrumb navigation, dual 50/50 split pane, zero neon glow, zero gratuitous gradients. Focused purely on speed and clarity.</div>
+            </div>
+            <a href="direction_realworld_linear.html" class="btn-launch">Open Benchmark 2 ➔</a>
+        </div>
+
+        <!-- Real World Benchmark 3 -->
+        <div class="card">
+            <div>
+                <div class="card-tag">Benchmark 03 — NIH Pharos & Bio-Workbench</div>
+                <div class="card-title">High-Density Clinical Evidence Dashboard</div>
+                <div class="card-desc">High-throughput 3-column workstation modeled on NIH Pharos & ChEMBL. Real-time telemetry header, faceted target/disease filters, structured evidence table, and full PubMed paper abstract inspector.</div>
+            </div>
+            <a href="direction_realworld_pharos.html" class="btn-launch">Open Benchmark 3 ➔</a>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

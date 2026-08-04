@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Direction 3: Swiss Precision & Analytical</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0A0B0E;
+            --panel-bg: #12141A;
+            --border-crisp: #272B35;
+            --accent-amber: #F59E0B;
+            --accent-cyan: #06B6D4;
+            --text-high: #F3F4F6;
+            --text-mid: #9CA3AF;
+            --text-dim: #4B5563;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-high);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-crisp);
+            margin-bottom: 2rem;
+        }
+        .brand-code {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: -1px;
+            color: #fff;
+        }
+        .brand-code span { color: var(--accent-amber); }
+        .tag-box {
+            border: 1px solid var(--accent-amber);
+            color: var(--accent-amber);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        .metrics-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .metric-tile {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-crisp);
+            padding: 1.2rem;
+        }
+        .metric-tile label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-mid);
+            text-transform: uppercase;
+        }
+        .metric-tile val {
+            display: block;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 0.3rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-crisp);
+            padding: 1.5rem;
+        }
+        .panel-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border-crisp);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .query-field {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--border-crisp);
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 1rem;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+        }
+        th, td {
+            border: 1px solid var(--border-crisp);
+            padding: 0.6rem 0.8rem;
+            text-align: left;
+        }
+        th { background: #000; color: var(--text-mid); }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <div class="brand-code">EBV-KG // <span>SWISS-PRECISION</span></div>
+        <div class="tag-box">DIRECTION 3: SWISS PRECISIAN & ANALYTICAL</div>
+    </div>
+
+    <div class="metrics-strip">
+        <div class="metric-tile">
+            <label>Corpus Papers</label>
+            <val style="color: var(--accent-cyan);">13,043</val>
+        </div>
+        <div class="metric-tile">
+            <label>Vector Chunks</label>
+            <val style="color: var(--accent-amber);">231,953</val>
+        </div>
+        <div class="metric-tile">
+            <label>Entities</label>
+            <val>25,049</val>
+        </div>
+        <div class="metric-tile">
+            <label>Approved Edges</label>
+            <val style="color: #10B981;">1,868</val>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="panel">
+            <div class="panel-title">
+                <span>GRAPH-RAG SEARCH ENGINE</span>
+                <span style="color: var(--accent-amber); font-family: 'JetBrains Mono'; font-size: 0.8rem;">CONF: 0.942</span>
+            </div>
+            <input type="text" class="query-field" value="> What metabolic enzymes are targeted by Withaferin A in EBV+ cells?">
+            
+            <p style="line-height: 1.7; color: var(--text-high); font-size: 0.95rem; margin-bottom: 1rem;">
+                Withaferin A selectively downregulates fatty acid desaturase <b>SCD1</b> expression in EBV-transformed B lymphocytes, disrupting lipid droplet formation and inducing mitochondrial apoptotic cascades [DOI:10.1182/blood.2025029771].
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Predicate</th>
+                        <th>Object</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="color: var(--accent-cyan);">Withaferin A</td>
+                        <td>INHIBITS</td>
+                        <td>SCD1</td>
+                        <td>0.94</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--accent-cyan);">SCD1</td>
+                        <td>IS_MARKER_FOR</td>
+                        <td>Atypical B Cell</td>
+                        <td>0.91</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">GRAPH METRICS</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-mid);">
+                <p style="margin-bottom: 0.8rem;">ENGINE: Neo4j 5.15</p>
+                <p style="margin-bottom: 0.8rem;">CYPHER HOP: 2-Hop SPOKE</p>
+                <p style="margin-bottom: 0.8rem;">EMBEDDING: specter2 (768d)</p>
+                <p>VECTOR STORE: LanceDB</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
