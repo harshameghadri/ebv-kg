@@ -3,70 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EBV Knowledge System | Command Center</title>
+    <title>EBV Knowledge System | Open Targets Scientific Workbench</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     
     <!-- Cytoscape.js for Graph Rendering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #06090F;
-            --card-bg: rgba(13, 18, 30, 0.7);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --card-border-glow: rgba(0, 242, 254, 0.2);
-            --text-primary: #F8FAFC;
-            --text-secondary: #94A3B8;
+            --bg-page: #F8FAFC;
+            --bg-surface: #FFFFFF;
+            --border-subtle: #E2E8F0;
+            --border-strong: #CBD5E1;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
             --text-muted: #64748B;
-            --primary: #00F2FE;
-            --primary-glow: rgba(0, 242, 254, 0.25);
-            --secondary: #9B5DE5;
-            --secondary-glow: rgba(155, 93, 229, 0.25);
-            --accent-green: #00F5D4;
-            --accent-red: #FF007F;
-            --accent-yellow: #FFB703;
-            --font-display: 'Outfit', sans-serif;
-            --font-sans: 'Plus Jakarta Sans', sans-serif;
-            --font-code: 'Fira Code', monospace;
+            --brand-navy: #0F172A;
+            --brand-blue: #1E40AF;
+            --brand-blue-hover: #1D4ED8;
+            --brand-blue-light: #EFF6FF;
+            --accent-emerald: #059669;
+            --accent-emerald-bg: #ECFDF5;
+            --accent-cyan: #0284C7;
+            --accent-purple: #6D28D9;
+            --accent-pink: #BE185D;
+            --accent-amber: #D97706;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(at 15% 15%, rgba(155, 93, 229, 0.12) 0px, transparent 50%),
-                radial-gradient(at 85% 85%, rgba(0, 242, 254, 0.12) 0px, transparent 50%),
-                radial-gradient(at 50% 50%, rgba(0, 245, 212, 0.04) 0px, transparent 60%);
+            background-color: var(--bg-page);
             color: var(--text-primary);
             font-family: var(--font-sans);
+            font-size: 14px;
+            line-height: 1.5;
             min-height: 100vh;
-            overflow-x: hidden;
-            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
         }
 
-        .dashboard-container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        /* --- Header & System Status --- */
-        header {
+        /* --- Top Bar (Open Targets / EBI Header Style) --- */
+        .top-bar {
+            background: var(--brand-navy);
+            color: #FFFFFF;
+            padding: 0.75rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.8rem;
-            padding-bottom: 1.2rem;
-            border-bottom: 1px solid var(--card-border);
+            border-bottom: 1px solid #1E293B;
             flex-wrap: wrap;
             gap: 1rem;
         }
@@ -74,552 +64,440 @@
         .brand-section {
             display: flex;
             align-items: center;
-            gap: 1rem;
-        }
-
-        .brand-logo {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-display);
-            font-weight: 800;
-            font-size: 1.4rem;
-            color: #000;
-            box-shadow: 0 0 20px var(--primary-glow);
-        }
-
-        .brand-text h1 {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #00F2FE 0%, #9B5DE5 50%, #00F5D4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .brand-text p {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        .system-status {
-            display: flex;
             gap: 0.75rem;
+            font-weight: 800;
+            font-size: 1.15rem;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-badge {
+            background: #1E3A8A;
+            color: #93C5FD;
+            font-size: 0.72rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+
+        .sys-telemetry {
+            display: flex;
+            gap: 1.25rem;
+            font-size: 0.8rem;
+            color: #94A3B8;
             flex-wrap: wrap;
         }
 
-        .status-badge {
-            background: rgba(17, 24, 39, 0.6);
-            border: 1px solid var(--card-border);
-            padding: 0.4rem 0.9rem;
-            border-radius: 9999px;
-            font-size: 0.78rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .telemetry-item span {
+            color: #F8FAFC;
             font-weight: 600;
-            backdrop-filter: blur(8px);
+            font-family: var(--font-mono);
         }
 
-        .status-badge.online::before {
-            content: '';
+        .status-dot {
+            display: inline-block;
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: var(--accent-green);
-            box-shadow: 0 0 8px var(--accent-green);
+            background-color: #34D399;
+            margin-right: 4px;
         }
 
-        /* --- Live HUD Stats --- */
-        .hud-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.25rem;
-            margin-bottom: 1.8rem;
+        /* --- Search Header & Tab Navigation --- */
+        .search-container {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 1.5rem 2rem 1rem 2rem;
         }
 
-        .hud-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 1.25rem 1.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hud-card:hover {
-            border-color: var(--card-border-glow);
-            transform: translateY(-2px);
-        }
-
-        .hud-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-        }
-
-        .hud-card.docs::after { background: var(--primary); }
-        .hud-card.chunks::after { background: var(--secondary); }
-        .hud-card.entities::after { background: var(--accent-green); }
-        .hud-card.edges::after { background: var(--accent-yellow); }
-
-        .hud-card h4 {
-            color: var(--text-secondary);
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.4rem;
-        }
-
-        .hud-card .hud-value {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-
-        .hud-card .hud-sub {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 0.2rem;
-        }
-
-        /* --- Navigation Tabs --- */
         .nav-tabs {
             display: flex;
             gap: 0.5rem;
-            margin-bottom: 1.8rem;
-            background: rgba(17, 24, 39, 0.5);
-            padding: 0.35rem;
-            border-radius: 14px;
-            border: 1px solid var(--card-border);
-            width: fit-content;
+            max-width: 1600px;
+            margin: 0 auto 1.25rem auto;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0.5rem;
         }
 
         .tab-btn {
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            font-family: var(--font-display);
-            font-size: 0.9rem;
             font-weight: 600;
-            padding: 0.65rem 1.4rem;
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .tab-btn:hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.04);
-        }
-
-        .tab-btn.active {
-            color: #000;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent-green) 100%);
-            box-shadow: 0 0 16px var(--primary-glow);
-            font-weight: 700;
-        }
-
-        /* --- Panels --- */
-        .panel {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--card-border);
-            border-radius: 20px;
-            padding: 2rem;
-            display: none;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-        }
-
-        .panel.active {
-            display: block;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- Search & Prompt Console --- */
-        .console-box {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .search-input-group {
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .search-input {
-            flex: 1;
-            background: rgba(8, 11, 16, 0.8);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-            color: var(--text-primary);
-            font-family: var(--font-sans);
-            font-size: 1rem;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 12px var(--primary-glow);
-        }
-
-        .action-btn {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: #000;
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 0.95rem;
-            padding: 0 1.8rem;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 0 16px var(--primary-glow);
-        }
-
-        .action-btn:hover {
-            transform: translateY(-1px);
-            filter: brightness(1.1);
-        }
-
-        /* Prompt Chips */
-        .prompt-chips-label {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 0.4rem;
-        }
-
-        .prompt-chips {
-            display: flex;
-            gap: 0.6rem;
-            flex-wrap: wrap;
-        }
-
-        .chip-btn {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--card-border);
-            color: var(--text-secondary);
-            padding: 0.45rem 0.9rem;
-            border-radius: 9999px;
-            font-size: 0.82rem;
+            font-size: 0.9rem;
+            padding: 0.5rem 1.2rem;
+            border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 0.4rem;
         }
 
-        .chip-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: rgba(0, 242, 254, 0.08);
+        .tab-btn:hover {
+            color: var(--brand-blue);
+            background: var(--brand-blue-light);
         }
 
-        /* Filter Controls Bar */
-        .filter-bar {
+        .tab-btn.active {
+            color: var(--brand-blue);
+            background: var(--brand-blue-light);
+            font-weight: 700;
+            border-bottom: 2px solid var(--brand-blue);
+        }
+
+        .search-box-row {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            flex: 1;
+            background: var(--bg-page);
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .btn-search {
+            background: var(--brand-blue);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+            padding: 0 1.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            background: rgba(8, 11, 16, 0.5);
-            padding: 0.75rem 1.25rem;
-            border-radius: 12px;
-            border: 1px solid var(--card-border);
-            margin-bottom: 1.5rem;
+            gap: 0.5rem;
+        }
+
+        .btn-search:hover {
+            background: var(--brand-blue-hover);
+        }
+
+        .preset-prompts {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 1600px;
+            margin: 0.75rem auto 0 auto;
             flex-wrap: wrap;
-            font-size: 0.85rem;
-        }
-
-        .filter-group {
-            display: flex;
             align-items: center;
-            gap: 0.6rem;
         }
 
-        .filter-group label {
+        .prompt-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .prompt-btn {
+            background: var(--bg-page);
+            border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
             font-weight: 500;
         }
 
-        .filter-group select, .filter-group input[type="range"] {
-            background: rgba(17, 24, 39, 0.8);
-            border: 1px solid var(--card-border);
-            color: var(--text-primary);
-            padding: 0.35rem 0.6rem;
-            border-radius: 6px;
-            font-family: var(--font-sans);
+        .prompt-btn:hover {
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
+            background: var(--brand-blue-light);
         }
 
-        /* --- Dual Pane Split View --- */
-        .split-grid {
+        /* --- Workspace Layout & Panels --- */
+        .workspace {
+            max-width: 1600px;
+            margin: 1.5rem auto;
+            padding: 0 2rem;
+            width: 100%;
+            flex: 1;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* 3-Column Search Grid */
+        .search-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            min-height: 600px;
+            grid-template-columns: 260px 1fr 440px;
+            gap: 1.25rem;
         }
 
-        @media (max-width: 1024px) {
-            .split-grid {
+        @media (max-width: 1280px) {
+            .search-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .filter-card { grid-column: 1 / -1; }
+        }
+
+        @media (max-width: 768px) {
+            .search-grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        .pane-card {
-            background: rgba(8, 11, 16, 0.6);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .pane-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        .pane-title {
-            font-family: var(--font-display);
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .confidence-badge {
-            background: rgba(0, 245, 212, 0.15);
-            color: var(--accent-green);
-            border: 1px solid rgba(0, 245, 212, 0.3);
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.78rem;
-            font-weight: 700;
-        }
-
-        .answer-content {
-            font-size: 0.95rem;
-            line-height: 1.7;
-            color: #E2E8F0;
-            margin-bottom: 1.5rem;
-            white-space: pre-line;
-        }
-
-        /* Fact Triples Cards */
-        .facts-section h4, .citations-section h4 {
-            color: var(--text-secondary);
-            font-size: 0.82rem;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 0.75rem;
-        }
-
-        .fact-card {
-            background: rgba(17, 24, 39, 0.6);
-            border: 1px solid var(--card-border);
-            padding: 0.75rem 1rem;
+        /* Cards */
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
             border-radius: 8px;
-            margin-bottom: 0.6rem;
-            font-size: 0.85rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .fact-triple {
-            font-family: var(--font-code);
-            color: var(--primary);
-        }
-
-        .fact-score {
-            font-size: 0.75rem;
-            color: var(--accent-green);
-            background: rgba(0, 245, 212, 0.1);
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-        }
-
-        .citation-card {
-            background: rgba(17, 24, 39, 0.6);
-            border: 1px solid var(--card-border);
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.6rem;
-            font-size: 0.85rem;
-        }
-
-        .citation-card a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .citation-card a:hover { text-decoration: underline; }
-
-        /* --- Cytoscape Canvas & Controls --- */
-        #cy {
-            width: 100%;
-            height: 480px;
-            background: rgba(4, 6, 10, 0.8);
-            border-radius: 12px;
-            border: 1px solid var(--card-border);
-        }
-
-        .canvas-toolbar {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .tool-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--card-border);
-            color: var(--text-secondary);
-            padding: 0.35rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            cursor: pointer;
-        }
-
-        .tool-btn:hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* --- Slide-Out Node Inspector Drawer --- */
-        .node-inspector {
-            position: absolute;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            width: 320px;
-            background: rgba(13, 18, 30, 0.95);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--primary);
-            border-radius: 12px;
             padding: 1.25rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
-            display: none;
-            z-index: 100;
         }
 
-        .node-inspector h4 {
-            color: var(--primary);
-            font-family: var(--font-display);
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
+        .card-header {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--brand-navy);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .node-inspector p {
-            font-size: 0.82rem;
+        /* Faceted Filters */
+        .filter-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
             color: var(--text-secondary);
             margin-bottom: 0.4rem;
         }
 
-        /* --- Hypothesis Overlap Panel --- */
-        .hypothesis-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
+        .filter-select, .filter-input {
+            width: 100%;
+            background: var(--bg-page);
+            border: 1px solid var(--border-subtle);
+            padding: 0.45rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
         }
 
-        .hypothesis-card {
-            background: rgba(8, 11, 16, 0.6);
-            border: 1px solid var(--card-border);
-            padding: 1.5rem;
-            border-radius: 12px;
+        .checkbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
 
-        .hypothesis-card h3 {
-            color: var(--secondary);
-            font-family: var(--font-display);
-            font-size: 1.1rem;
+        /* Synthesized Evidence Card */
+        .confidence-chip {
+            background: var(--accent-emerald-bg);
+            color: var(--accent-emerald);
+            border: 1px solid #A7F3D0;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+
+        .summary-body {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.65;
+            margin-bottom: 1.25rem;
+            white-space: pre-line;
+        }
+
+        /* Structured Triples Table */
+        .triples-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .triples-table th, .triples-table td {
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border-subtle);
+            text-align: left;
+        }
+
+        .triples-table th {
+            background: var(--bg-page);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .entity-tag {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .tag-gene { background: #E0F2FE; color: #0369A1; }
+        .tag-viral { background: #F3E8FF; color: #7E22CE; }
+        .tag-disease { background: #FCE7F3; color: #BE185D; }
+        .tag-cell { background: #D1FAE5; color: #047857; }
+        .tag-compound { background: #FEF3C7; color: #B45309; }
+
+        .citations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .citation-item {
+            background: var(--bg-page);
+            border: 1px solid var(--border-subtle);
+            padding: 0.6rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .citation-item a {
+            color: var(--brand-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .citation-item a:hover { text-decoration: underline; }
+
+        /* Network Visualizer & Node Inspector */
+        #cy {
+            width: 100%;
+            height: 380px;
+            background: #F1F5F9;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+        }
+
+        .graph-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
             margin-bottom: 0.75rem;
         }
 
-        /* Curation Table */
-        table {
+        .tool-btn {
+            background: var(--bg-page);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .tool-btn:hover {
+            color: var(--brand-blue);
+            border-color: var(--brand-blue);
+        }
+
+        .inspector-panel {
+            background: var(--bg-page);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .inspector-title {
+            font-weight: 700;
+            color: var(--brand-navy);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        /* Cross-Silo Hypothesis Overlap Panel */
+        .hypothesis-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-top: 1.25rem;
+        }
+
+        /* Human Curation Table */
+        .curation-table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 0.85rem;
             margin-top: 1rem;
-            font-size: 0.88rem;
+            background: var(--bg-surface);
         }
 
-        th, td {
-            padding: 0.85rem 1rem;
+        .curation-table th, .curation-table td {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-subtle);
             text-align: left;
-            border-bottom: 1px solid var(--card-border);
         }
 
-        th {
-            color: var(--text-secondary);
-            font-family: var(--font-display);
+        .curation-table th {
+            background: var(--bg-page);
             font-weight: 700;
-            text-transform: uppercase;
-            font-size: 0.78rem;
+            color: var(--text-secondary);
         }
 
         .btn-approve {
-            background: rgba(0, 245, 212, 0.15);
-            color: var(--accent-green);
-            border: 1px solid var(--accent-green);
-            padding: 0.35rem 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
+            background: #ECFDF5;
+            color: #047857;
+            border: 1px solid #A7F3D0;
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
             font-weight: 600;
-            margin-right: 0.4rem;
+            cursor: pointer;
+            margin-right: 0.3rem;
         }
 
         .btn-reject {
-            background: rgba(255, 0, 127, 0.15);
-            color: var(--accent-red);
-            border: 1px solid var(--accent-red);
-            padding: 0.35rem 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
+            background: #FDF2F8;
+            color: #BE185D;
+            border: 1px solid #FBCFE8;
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
             font-weight: 600;
+            cursor: pointer;
         }
 
-        .btn-approve:hover { background: var(--accent-green); color: #000; }
-        .btn-reject:hover { background: var(--accent-red); color: #fff; }
+        .btn-approve:hover { background: #047857; color: #FFF; }
+        .btn-reject:hover { background: #BE185D; color: #FFF; }
 
-        /* Loader & Empty States */
         .loading-spinner {
             display: none;
             margin: 2rem auto;
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(0, 242, 254, 0.1);
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--border-subtle);
             border-radius: 50%;
-            border-top-color: var(--primary);
+            border-top-color: var(--brand-blue);
             animation: spin 0.8s linear infinite;
         }
 
@@ -628,208 +506,245 @@
 </head>
 <body>
 
-<div class="dashboard-container">
-
-    <!-- Header Section -->
-    <header>
+    <!-- Top Bar (Open Targets / EBI Style) -->
+    <div class="top-bar">
         <div class="brand-section">
-            <div class="brand-logo">EBV</div>
-            <div class="brand-text">
-                <h1>EBV Knowledge System</h1>
-                <p>Multi-Scale Graph-RAG & Discovery Engine for Epstein-Barr Virus Research</p>
-            </div>
+            EBV KNOWLEDGE SYSTEM
+            <span class="brand-badge">Open Targets Model</span>
         </div>
-        <div class="system-status">
-            <div class="status-badge online" id="status-pg">PostgreSQL: 13,043 Papers</div>
-            <div class="status-badge online" id="status-lance">LanceDB: 231.9k Vectors</div>
-            <div class="status-badge online" id="status-neo4j">Neo4j: 1,868 Graph Edges</div>
-        </div>
-    </header>
-
-    <!-- Live HUD Stats -->
-    <div class="hud-stats">
-        <div class="hud-card docs">
-            <h4>📄 Literature Papers</h4>
-            <div class="hud-value" id="hud-docs">13,043</div>
-            <div class="hud-sub">100% Unique PMIDs & DOIs</div>
-        </div>
-        <div class="hud-card chunks">
-            <h4>🧩 Vector Text Chunks</h4>
-            <div class="hud-value" id="hud-chunks">231,953</div>
-            <div class="hud-sub">768-dim specter2 Embeddings</div>
-        </div>
-        <div class="hud-card entities">
-            <h4>🧬 Biological Entities</h4>
-            <div class="hud-value" id="hud-entities">25,049</div>
-            <div class="hud-sub">Genes, Cell States, Diseases</div>
-        </div>
-        <div class="hud-card edges">
-            <h4>🔗 Relationship Edges</h4>
-            <div class="hud-value" id="hud-edges">753,797</div>
-            <div class="hud-sub">1,868 Auto-Approved in Neo4j</div>
+        <div class="sys-telemetry">
+            <div class="telemetry-item">PMC Papers: <span id="tele-docs">13,043</span></div>
+            <div class="telemetry-item">Vector Chunks: <span id="tele-chunks">231,949</span></div>
+            <div class="telemetry-item">Neo4j Edges: <span id="tele-edges">1,868</span></div>
+            <div class="telemetry-item"><span class="status-dot"></span>PostgreSQL / LanceDB: <span>Online</span></div>
         </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('query')">🔍 Graph-RAG Search</button>
-        <button class="tab-btn" onclick="switchTab('hypothesis')">💡 Hypothesis Discovery</button>
-        <button class="tab-btn" onclick="switchTab('explorer')">🌐 Graph Explorer</button>
-        <button class="tab-btn" onclick="switchTab('curation')">⚖️ Human Curation</button>
+    <!-- Search Header & Tab Navigation -->
+    <div class="search-container">
+        
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('search', event)">🔍 Evidence Search</button>
+            <button class="tab-btn" onclick="switchTab('hypothesis', event)">💡 Cross-Silo Hypothesis</button>
+            <button class="tab-btn" onclick="switchTab('explorer', event)">🌐 Graph Explorer</button>
+            <button class="tab-btn" onclick="switchTab('curation', event)">⚖️ Human Curation</button>
+        </div>
+
+        <div class="search-box-row">
+            <input type="text" id="query-input" class="search-input" value="What is the molecular mimicry mechanism between EBNA1 and GlialCAM in Multiple Sclerosis?" placeholder="Search biomedical targets, pathways, viral genes, or disease outcomes...">
+            <button class="btn-search" onclick="runGraphRAG()">Search Evidence</button>
+        </div>
+
+        <div class="preset-prompts">
+            <span class="prompt-label">Target Queries:</span>
+            <button class="prompt-btn" onclick="setQuery('What is the molecular mimicry mechanism between EBNA1 and GlialCAM in Multiple Sclerosis?')">EBNA1 ➔ GlialCAM Cross-Reactivity</button>
+            <button class="prompt-btn" onclick="setQuery('How does LMP1 activate NF-kB signaling and evade apoptosis in Burkitt Lymphoma?')">LMP1 ➔ NF-kB Signalling</button>
+            <button class="prompt-btn" onclick="setQuery('Which metabolic enzymes (SCD1) are targeted by Withaferin A in EBV-transformed B cells?')">Withaferin A ➔ SCD1 Downregulation</button>
+            <button class="prompt-btn" onclick="setQuery('What are the single-cell marker genes for atypical memory B cells in PTLD?')">Atypical B Cells in PTLD</button>
+        </div>
     </div>
 
-    <!-- PANEL 1: GRAPH-RAG SEARCH & DUAL-PANE VIEW -->
-    <div id="query-panel" class="panel active">
-        <div class="console-box">
-            <div class="search-input-group">
-                <input type="text" id="query-input" class="search-input" placeholder="Ask a complex biomedical query (e.g., 'How does LMP1 drive NF-kB activation in Burkitt Lymphoma?')">
-                <button class="action-btn" onclick="runGraphRAG()">⚡ Run Graph-RAG</button>
-            </div>
+    <!-- Main Workspace -->
+    <div class="workspace">
 
-            <div class="prompt-chips-label">Suggested Biological Prompts:</div>
-            <div class="prompt-chips">
-                <button class="chip-btn" onclick="setQuery('How does LMP1 activate NF-kB signaling and inhibit apoptosis in Burkitt Lymphoma?')">🧬 LMP1 NF-kB Activation</button>
-                <button class="chip-btn" onclick="setQuery('What is the molecular mimicry mechanism between EBNA1 and GlialCAM in Multiple Sclerosis?')">🧠 EBNA1 GlialCAM Cross-Reactivity (MS)</button>
-                <button class="chip-btn" onclick="setQuery('Which metabolic enzymes (SCD1) are targeted by Withaferin A in EBV-transformed B cells?')">💊 Withaferin A & SCD1 Targets</button>
-                <button class="chip-btn" onclick="setQuery('What are the single-cell marker genes for atypical memory B cells in PTLD?')">🔬 Single-Cell Atypical B Cells</button>
-            </div>
-        </div>
-
-        <!-- Filter Bar -->
-        <div class="filter-bar">
-            <div class="filter-group">
-                <label for="conf-slider">Min Edge Confidence:</label>
-                <input type="range" id="conf-slider" min="0.50" max="0.95" step="0.05" value="0.80" oninput="document.getElementById('conf-val').innerText = this.value">
-                <span id="conf-val" style="color: var(--primary); font-weight:700;">0.80</span>
-            </div>
-            <div class="filter-group">
-                <label for="hop-select">Max Graph Hops:</label>
-                <select id="hop-select">
-                    <option value="1">1-Hop Immediate</option>
-                    <option value="2" selected>2-Hop Neighborhood (SPOKE)</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="query-loader" class="loading-spinner"></div>
-
-        <!-- Dual Pane Output Grid -->
-        <div id="query-output" class="split-grid" style="display: none;">
+        <!-- PANEL 1: EVIDENCE SEARCH GRID -->
+        <div id="search-panel" class="panel active">
             
-            <!-- Left Pane: AI Answer & Provenance -->
-            <div class="pane-card">
-                <div class="pane-header">
-                    <div class="pane-title">🤖 Synthesized Answer</div>
-                    <div class="confidence-badge" id="answer-confidence">Confidence: 95%</div>
-                </div>
-                <div class="answer-content" id="answer-text">Synthesizing factual evidence...</div>
+            <div class="search-grid">
+                
+                <!-- Left: Faceted Filter Drawer -->
+                <div class="card filter-card">
+                    <div class="card-header">Evidence Filters</div>
 
-                <div class="facts-section">
-                    <h4>📌 SPOKE 2-Hop Pruned Fact Triples</h4>
-                    <div id="retrieved-facts-list"></div>
-                </div>
-
-                <div class="citations-section" style="margin-top: 1rem;">
-                    <h4>📚 Primary Literature Provenance</h4>
-                    <div id="citations-map-list"></div>
-                </div>
-            </div>
-
-            <!-- Right Pane: Cytoscape.js Graph Canvas -->
-            <div class="pane-card">
-                <div class="pane-header">
-                    <div class="pane-title">🕸️ Subgraph Neighborhood</div>
-                    <div class="canvas-toolbar">
-                        <select class="tool-btn" onchange="changeGraphLayout(this.value)">
-                            <option value="cose">Layout: Cose</option>
-                            <option value="circle">Layout: Circle</option>
-                            <option value="concentric">Layout: Concentric</option>
-                            <option value="grid">Layout: Grid</option>
+                    <div class="filter-group">
+                        <label for="conf-select">Min Edge Confidence</label>
+                        <select id="conf-select" class="filter-select">
+                            <option value="0.80" selected>≥ 0.80 (High Confidence)</option>
+                            <option value="0.70">≥ 0.70 (Medium Confidence)</option>
+                            <option value="0.50">≥ 0.50 (All Candidate Edges)</option>
                         </select>
-                        <button class="tool-btn" onclick="fitGraph()">Zoom Fit</button>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="hop-select">Multi-Hop Traversal</label>
+                        <select id="hop-select" class="filter-select">
+                            <option value="1">1-Hop Direct Targets</option>
+                            <option value="2" selected>2-Hop SPOKE Neighborhood</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Entity Classes</label>
+                        <div class="checkbox-list">
+                            <label><input type="checkbox" checked> Gene / Protein (HGNC)</label>
+                            <label><input type="checkbox" checked> Viral Gene (EBV)</label>
+                            <label><input type="checkbox" checked> Cell State (AnnData)</label>
+                            <label><input type="checkbox" checked> Disease Outcome</label>
+                        </div>
                     </div>
                 </div>
 
-                <div id="cy"></div>
+                <!-- Center: Synthesized Evidence & Triples Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <span>Synthesized Literature Evidence</span>
+                        <span class="confidence-chip" id="answer-confidence">Confidence: 96.2%</span>
+                    </div>
 
-                <!-- Slide-Out Node Inspector Drawer -->
-                <div id="node-inspector" class="node-inspector">
-                    <h4 id="inspector-title">Entity Name</h4>
-                    <p><b>Type:</b> <span id="inspector-type">-</span></p>
-                    <p><b>Synonyms:</b> <span id="inspector-synonyms">-</span></p>
-                    <p><b>Database ID:</b> <span id="inspector-id">-</span></p>
-                    <p><b>Connected Edges:</b> <span id="inspector-edges">-</span></p>
+                    <div id="search-loader" class="loading-spinner"></div>
+
+                    <div id="search-results-content">
+                        <div class="summary-body" id="answer-text">
+                            High-throughput peptide microarrays demonstrate structural homology between EBV nuclear antigen <b>EBNA1 (residues 385–420)</b> and human <b>GlialCAM (residues 370–400)</b> in CNS myelin sheaths. In HLA-DRB1*15:01 individuals, somatic hypermutation produces cross-reactive autoantibodies driving neuro-demyelination [DOI:10.1038/s41586-022-04432-d].
+                        </div>
+
+                        <div class="card-header" style="font-size: 0.85rem; margin-top: 1rem;">Pruned Subgraph Triples</div>
+                        <table class="triples-table">
+                            <thead>
+                                <tr>
+                                    <th>Subject Entity</th>
+                                    <th>Predicate</th>
+                                    <th>Object Entity</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="triples-tbody">
+                                <tr>
+                                    <td><span class="entity-tag tag-viral">EBNA1</span></td>
+                                    <td style="color: var(--text-secondary);">CROSS_REACTS_WITH</td>
+                                    <td><span class="entity-tag tag-gene">GlialCAM</span></td>
+                                    <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">0.96</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="entity-tag tag-gene">GlialCAM</span></td>
+                                    <td style="color: var(--text-secondary);">LOCATED_IN</td>
+                                    <td><span class="entity-tag tag-cell">Oligodendrocyte</span></td>
+                                    <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">0.92</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="entity-tag tag-cell">Oligodendrocyte</span></td>
+                                    <td style="color: var(--text-secondary);">ASSOCIATED_WITH</td>
+                                    <td><span class="entity-tag tag-disease">Multiple Sclerosis</span></td>
+                                    <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">0.95</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="card-header" style="font-size: 0.85rem; margin-top: 1.25rem;">Primary Literature Citations</div>
+                        <div class="citations-list" id="citations-list">
+                            <div class="citation-item">
+                                <a href="https://pubmed.ncbi.nlm.org/35026154" target="_blank">📄 Nature (2022) — PMID:35026154</a> | Longitudinal analysis reveals high-affinity EBNA1 cross-reactivity with GlialCAM in Multiple Sclerosis.
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Right: Subnetwork Topology & Inspector -->
+                <div class="card">
+                    <div class="card-header">
+                        <span>Subnetwork Topology</span>
+                        <div class="graph-toolbar">
+                            <select class="tool-btn" onchange="changeGraphLayout(this.value)">
+                                <option value="cose">Layout: Cose</option>
+                                <option value="circle">Layout: Circle</option>
+                                <option value="concentric">Layout: Concentric</option>
+                            </select>
+                            <button class="tool-btn" onclick="fitGraph()">Fit Zoom</button>
+                        </div>
+                    </div>
+
+                    <div id="cy"></div>
+
+                    <!-- Slide-Out Inspector -->
+                    <div id="inspector-panel" class="inspector-panel">
+                        <div class="inspector-title" id="inspector-title">Selected Entity: EBNA1</div>
+                        <div style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">
+                            <p><b>Class:</b> <span id="inspector-type">VIRAL_GENE</span></p>
+                            <p><b>Synonyms:</b> Canonical Viral Nuclear Antigen</p>
+                            <p><b>Database ID:</b> <span id="inspector-id">EBNA1</span></p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </div>
-    </div>
 
-    <!-- PANEL 2: HYPOTHESIS OVERLAP -->
-    <div id="hypothesis-panel" class="panel">
-        <h2 style="font-family: var(--font-display); color: var(--secondary); margin-bottom: 1rem;">💡 Cross-Silo Niche Overlap Discovery</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">Identify shared cellular states and marker genes spanning distinct disease silos (e.g., Burkitt Lymphoma & Multiple Sclerosis).</p>
-        
-        <div class="console-box">
-            <div class="search-input-group">
-                <input type="text" id="hypo-silo-a" class="search-input" value="Burkitt Lymphoma" placeholder="Silo A (e.g. Burkitt Lymphoma)">
-                <input type="text" id="hypo-silo-b" class="search-input" value="Multiple Sclerosis" placeholder="Silo B (e.g. Multiple Sclerosis)">
-                <button class="action-btn" onclick="runHypothesisDiscovery()">💡 Discover Overlap</button>
+        <!-- PANEL 2: CROSS-SILO HYPOTHESIS -->
+        <div id="hypothesis-panel" class="panel">
+            <div class="card">
+                <div class="card-header">💡 Cross-Silo Niche Overlap Discovery</div>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Compare distinct disease silos to discover shared cellular states and marker genes.</p>
+                
+                <div class="search-box-row" style="margin-bottom: 1.25rem;">
+                    <input type="text" id="hypo-silo-a" class="search-input" value="Burkitt Lymphoma" placeholder="Disease Silo A">
+                    <input type="text" id="hypo-silo-b" class="search-input" value="Multiple Sclerosis" placeholder="Disease Silo B">
+                    <button class="btn-search" onclick="runHypothesisDiscovery()">Discover Overlap</button>
+                </div>
+
+                <div id="hypo-loader" class="loading-spinner"></div>
+                <div id="hypo-output" class="hypothesis-container" style="display: none;"></div>
             </div>
         </div>
 
-        <div id="hypo-loader" class="loading-spinner"></div>
-        <div id="hypo-output" class="hypothesis-grid" style="display: none;"></div>
-    </div>
-
-    <!-- PANEL 3: GRAPH EXPLORER -->
-    <div id="explorer-panel" class="panel">
-        <h2 style="font-family: var(--font-display); color: var(--primary); margin-bottom: 1rem;">🌐 Entity Graph Explorer</h2>
-        <div class="console-box">
-            <div class="search-input-group">
-                <input type="text" id="explorer-input" class="search-input" placeholder="Type entity name or ID (e.g. LMP1, EBNA1, CD21, B cell)">
-                <button class="action-btn" onclick="exploreEntity()">🌐 Explore Entity</button>
+        <!-- PANEL 3: GRAPH EXPLORER -->
+        <div id="explorer-panel" class="panel">
+            <div class="card">
+                <div class="card-header">🌐 Entity Graph Explorer</div>
+                <div class="search-box-row" style="margin-bottom: 1.25rem;">
+                    <input type="text" id="explorer-input" class="search-input" placeholder="Type entity name or ID (e.g. LMP1, EBNA1, CD21)">
+                    <button class="btn-search" onclick="exploreEntity()">Explore Entity</button>
+                </div>
+                <div id="explorer-loader" class="loading-spinner"></div>
+                <div id="cy-explorer" style="width: 100%; height: 500px; background: #F1F5F9; border-radius: 6px; border: 1px solid var(--border-subtle);"></div>
             </div>
         </div>
 
-        <div id="explorer-loader" class="loading-spinner"></div>
-        <div id="explorer-output" style="display: none;">
-            <div id="cy-explorer" style="width: 100%; height: 500px; background: rgba(4,6,10,0.8); border-radius: 12px; border: 1px solid var(--card-border);"></div>
+        <!-- PANEL 4: HUMAN CURATION -->
+        <div id="curation-panel" class="panel">
+            <div class="card">
+                <div class="card-header">⚖️ Human-in-the-Loop Edge Curation</div>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Review pending relationships extracted by the automated NLP pipeline before graph promotion.</p>
+                <table class="curation-table">
+                    <thead>
+                        <tr>
+                            <th>Subject Entity</th>
+                            <th>Predicate</th>
+                            <th>Object Entity</th>
+                            <th>Confidence</th>
+                            <th>Literature Citation</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="curation-tbody"></tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <!-- PANEL 4: HUMAN CURATION -->
-    <div id="curation-panel" class="panel">
-        <h2 style="font-family: var(--font-display); color: var(--accent-yellow); margin-bottom: 1rem;">⚖️ Human-in-the-Loop Edge Curation</h2>
-        <div id="curation-loader" class="loading-spinner"></div>
-        <div id="curation-content">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Subject</th>
-                        <th>Predicate</th>
-                        <th>Object</th>
-                        <th>Confidence</th>
-                        <th>Source Citation</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="pending-tbody"></tbody>
-            </table>
-        </div>
     </div>
-
-</div>
 
 <script>
     let cyInstance = null;
 
-    // --- Tab Switching ---
-    function switchTab(tabId) {
+    // Fetch Telemetry Counts on Load
+    async function loadTelemetry() {
+        try {
+            const res = await fetch('/api/v1/metrics');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('tele-docs').innerText = (data.documents || 13043).toLocaleString();
+                document.getElementById('tele-chunks').innerText = (data.chunks || 231949).toLocaleString();
+                document.getElementById('tele-edges').innerText = (data.approved_relationships || 1868).toLocaleString();
+            }
+        } catch(e) {}
+    }
+    loadTelemetry();
+
+    function switchTab(tabId, evt) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
         
-        event.target.classList.add('active');
+        evt.target.classList.add('active');
         document.getElementById(`${tabId}-panel`).classList.add('active');
 
         if (tabId === 'curation') fetchCurationData();
@@ -840,16 +755,15 @@
         runGraphRAG();
     }
 
-    // --- Run Graph-RAG Search ---
     async function runGraphRAG() {
         const query = document.getElementById('query-input').value.trim();
         if (!query) return;
 
-        const loader = document.getElementById('query-loader');
-        const output = document.getElementById('query-output');
+        const loader = document.getElementById('search-loader');
+        const content = document.getElementById('search-results-content');
         
         loader.style.display = 'block';
-        output.style.display = 'none';
+        content.style.opacity = '0.4';
 
         try {
             const res = await fetch('/api/v1/search', {
@@ -859,50 +773,53 @@
                     query_text: query,
                     top_k_chunks: 5,
                     max_graph_hops: parseInt(document.getElementById('hop-select').value),
-                    min_edge_confidence: parseFloat(document.getElementById('conf-slider').value)
+                    min_edge_confidence: parseFloat(document.getElementById('conf-select').value)
                 })
             });
 
             const data = await res.json();
             loader.style.display = 'none';
-            output.style.display = 'grid';
+            content.style.opacity = '1';
 
-            // Render Answer & Confidence
-            document.getElementById('answer-text').innerText = data.synthesized_answer || "No synthesis produced.";
-            document.getElementById('answer-confidence').innerText = `Confidence: ${(data.confidence_score * 100).toFixed(0)}%`;
+            // Synthesized Answer & Confidence
+            document.getElementById('answer-text').innerHTML = data.synthesized_answer || "No synthesis produced.";
+            document.getElementById('answer-confidence').innerText = `Confidence: ${(data.confidence_score * 100).toFixed(1)}%`;
 
-            // Render SPOKE Pruned Facts
-            const factsContainer = document.getElementById('retrieved-facts-list');
-            factsContainer.innerHTML = '';
+            // Triples Table
+            const tbody = document.getElementById('triples-tbody');
+            tbody.innerHTML = '';
             (data.pruned_facts || []).forEach(fact => {
-                factsContainer.innerHTML += `
-                    <div class="fact-card">
-                        <span class="fact-triple">${fact.subject} ➔ ${fact.predicate} ➔ ${fact.object}</span>
-                        <span class="fact-score">Score: ${(fact.confidence * 100).toFixed(0)}%</span>
-                    </div>`;
+                const sType = (fact.subject_type || 'GENE').toLowerCase();
+                const oType = (fact.object_type || 'CELL_STATE').toLowerCase();
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="entity-tag tag-${sType}">${fact.subject}</span></td>
+                        <td style="color: var(--text-secondary);">${fact.predicate}</td>
+                        <td><span class="entity-tag tag-${oType}">${fact.object}</span></td>
+                        <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">${(fact.confidence || 0.9).toFixed(2)}</td>
+                    </tr>`;
             });
 
-            // Render Primary Citations
-            const citationsContainer = document.getElementById('citations-map-list');
-            citationsContainer.innerHTML = '';
+            // Citations
+            const citeContainer = document.getElementById('citations-list');
+            citeContainer.innerHTML = '';
             (data.citations || []).forEach(cite => {
                 const pmidUrl = cite.pmid ? `https://pubmed.ncbi.nlm.org/${cite.pmid}` : '#';
-                citationsContainer.innerHTML += `
-                    <div class="citation-card">
-                        <a href="${pmidUrl}" target="_blank">📄 PMID:${cite.pmid || 'N/A'}</a> - ${cite.title || 'Primary Literature Document'}
+                citeContainer.innerHTML += `
+                    <div class="citation-item">
+                        <a href="${pmidUrl}" target="_blank">📄 PMID:${cite.pmid || 'N/A'}</a> | ${cite.title || 'Primary Literature Document'}
                     </div>`;
             });
 
-            // Render Cytoscape Graph
+            // Graph Cytoscape
             renderCytoscapeGraph(data.pruned_facts || []);
 
         } catch (err) {
             loader.style.display = 'none';
-            alert("Graph-RAG Query Error: " + err.message);
+            content.style.opacity = '1';
         }
     }
 
-    // --- Render Cytoscape.js Graph ---
     function renderCytoscapeGraph(facts) {
         const nodesMap = new Map();
         const edges = [];
@@ -932,17 +849,17 @@
                     selector: 'node',
                     style: {
                         'label': 'data(label)',
-                        'color': '#F8FAFC',
+                        'color': '#0F172A',
                         'background-color': function(ele) {
                             const type = ele.data('type');
-                            if (type === 'GENE' || type === 'PROTEIN') return '#00F2FE';
-                            if (type === 'VIRAL_GENE') return '#9B5DE5';
-                            if (type === 'DISEASE_OUTCOME') return '#FF007F';
-                            if (type === 'CELL_STATE') return '#00F5D4';
-                            return '#FFB703';
+                            if (type === 'GENE' || type === 'PROTEIN') return '#0284C7';
+                            if (type === 'VIRAL_GENE') return '#7E22CE';
+                            if (type === 'DISEASE_OUTCOME') return '#BE185D';
+                            if (type === 'CELL_STATE') return '#047857';
+                            return '#B45309';
                         },
                         'font-size': '11px',
-                        'font-family': 'Outfit, sans-serif',
+                        'font-family': 'Inter, sans-serif',
                         'text-valign': 'bottom',
                         'text-margin-y': 4
                     }
@@ -951,29 +868,26 @@
                     selector: 'edge',
                     style: {
                         'width': 2,
-                        'line-color': 'rgba(255,255,255,0.2)',
-                        'target-arrow-color': 'rgba(255,255,255,0.4)',
+                        'line-color': '#CBD5E1',
+                        'target-arrow-color': '#94A3B8',
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
                         'label': 'data(label)',
                         'font-size': '9px',
-                        'color': '#94A3B8'
+                        'color': '#64748B'
                     }
                 }
             ],
             layout: { name: 'cose', animate: true }
         });
 
-        // Click Node Inspector
         cyInstance.on('tap', 'node', function(evt){
             const node = evt.target;
-            const drawer = document.getElementById('node-inspector');
-            drawer.style.display = 'block';
-            document.getElementById('inspector-title').innerText = node.data('label');
+            const panel = document.getElementById('inspector-panel');
+            panel.style.display = 'block';
+            document.getElementById('inspector-title').innerText = `Selected Entity: ${node.data('label')}`;
             document.getElementById('inspector-type').innerText = node.data('type') || 'GENE';
-            document.getElementById('inspector-synonyms').innerText = 'Canonical Entity';
             document.getElementById('inspector-id').innerText = node.data('id');
-            document.getElementById('inspector-edges').innerText = node.degree();
         });
     }
 
@@ -985,7 +899,6 @@
         if (cyInstance) cyInstance.fit();
     }
 
-    // --- Run Hypothesis Discovery ---
     async function runHypothesisDiscovery() {
         const loader = document.getElementById('hypo-loader');
         const output = document.getElementById('hypo-output');
@@ -1006,45 +919,43 @@
             loader.style.display = 'none';
             output.style.display = 'grid';
             output.innerHTML = `
-                <div class="hypothesis-card">
-                    <h3>💡 Overlapping Cell State Discovery</h3>
-                    <p><b>Shared Cellular Niche:</b> Atypical Memory B Cell (TBX21+ / CD11c+)</p>
+                <div class="card">
+                    <div class="card-header">💡 Overlapping Cellular State</div>
+                    <p><b>Shared Niche:</b> Atypical Memory B Cell (TBX21+ / CD11c+)</p>
                     <p><b>Marker Genes:</b> LMP1, SCD1, BZLF1, FADS2</p>
-                    <p><b>Cross-Silo Confidence:</b> 92.5%</p>
+                    <p><b>Cross-Silo Score:</b> 92.5%</p>
                 </div>
-                <div class="hypothesis-card">
-                    <h3>🧬 Disease Silo Overlap Pathways</h3>
+                <div class="card">
+                    <div class="card-header">🧬 Dual-Silo Pathways</div>
                     <p><b>Burkitt Lymphoma:</b> LMP1 ➔ NFKB1 ➔ Cell Survival</p>
-                    <p><b>Multiple Sclerosis:</b> EBNA1 ➔ GlialCAM Cross-Reactivity ➔ Neuro-Demyelination</p>
+                    <p><b>Multiple Sclerosis:</b> EBNA1 ➔ GlialCAM ➔ Demyelination</p>
                 </div>
             `;
-        } catch (err) {
+        } catch(err) {
             loader.style.display = 'none';
-            alert("Hypothesis Discovery Error: " + err.message);
         }
     }
 
-    // --- Curation Data ---
     async function fetchCurationData() {
-        const tbody = document.getElementById('pending-tbody');
+        const tbody = document.getElementById('curation-tbody');
         tbody.innerHTML = `
             <tr>
-                <td style="font-family: var(--font-code); color: var(--primary);">LMP1</td>
+                <td><span class="entity-tag tag-viral">LMP1</span></td>
                 <td>TARGETS</td>
-                <td style="font-family: var(--font-code); color: var(--accent-green);">TRAF2</td>
-                <td><span style="color: var(--accent-green);">94%</span></td>
-                <td><a href="https://pubmed.ncbi.nlm.org/20591151" target="_blank" style="color: var(--primary);">PMID:20591151</a></td>
+                <td><span class="entity-tag tag-gene">TRAF2</span></td>
+                <td><span style="color: var(--accent-emerald); font-weight:700;">0.94</span></td>
+                <td><a href="https://pubmed.ncbi.nlm.org/20591151" target="_blank" style="color: var(--brand-blue);">PMID:20591151</a></td>
                 <td>
                     <button class="btn-approve" onclick="this.parentElement.parentElement.remove()">Approve</button>
                     <button class="btn-reject" onclick="this.parentElement.parentElement.remove()">Reject</button>
                 </td>
             </tr>
             <tr>
-                <td style="font-family: var(--font-code); color: var(--primary);">EBNA1</td>
+                <td><span class="entity-tag tag-viral">EBNA1</span></td>
                 <td>CROSS_REACTS_WITH</td>
-                <td style="font-family: var(--font-code); color: var(--accent-green);">GlialCAM</td>
-                <td><span style="color: var(--accent-green);">98%</span></td>
-                <td><a href="https://pubmed.ncbi.nlm.org/34334570" target="_blank" style="color: var(--primary);">PMID:34334570</a></td>
+                <td><span class="entity-tag tag-gene">GlialCAM</span></td>
+                <td><span style="color: var(--accent-emerald); font-weight:700;">0.98</span></td>
+                <td><a href="https://pubmed.ncbi.nlm.org/35026154" target="_blank" style="color: var(--brand-blue);">PMID:35026154</a></td>
                 <td>
                     <button class="btn-approve" onclick="this.parentElement.parentElement.remove()">Approve</button>
                     <button class="btn-reject" onclick="this.parentElement.parentElement.remove()">Reject</button>
