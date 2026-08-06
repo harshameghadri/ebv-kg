@@ -237,18 +237,24 @@ class NERExtractor:
             "Cell": "CELL_TYPE",
             "Organism_substance": "CHEMICAL",
             "Sign_or_symptom": "DISEASE",
+            "Sign_symptom": "DISEASE",
+            "Diagnostic_procedure": "GENE",
+            "Medication": "CHEMICAL",
+            "Biological_structure": "CELL_TYPE",
+            "Lab_value": "CHEMICAL",
+            "Detailed_description": "DISEASE",
             "GENE": "GENE",
             "PROTEIN": "PROTEIN",
             "CELL_TYPE": "CELL_TYPE",
             "DISEASE": "DISEASE",
-            "CHEMICAL": "CHEMICAL"
+            "CHEMICAL": "CHEMICAL",
         }
 
         # Check if the output has doc.ents (spaCy format in test mocks)
         if hasattr(entities, "ents"):
             for ent in entities.ents:
                 raw_label = str(ent.label_).upper()
-                mapped_type = SCISPACY_TYPE_MAP.get(raw_label) or HF_TYPE_MAP.get(raw_label)
+                mapped_type = SCISPACY_TYPE_MAP.get(raw_label) or HF_TYPE_MAP.get(ent.label_) or HF_TYPE_MAP.get(raw_label)
                 if not mapped_type or mapped_type not in ALLOWED_ENTITY_TYPES:
                     continue
                 results.append(
@@ -269,9 +275,17 @@ class NERExtractor:
                 if not mapped_type or mapped_type not in ALLOWED_ENTITY_TYPES:
                     continue
 
+                raw_word = str(ent.get("word", "")).strip()
+                # Clean up WordPiece sub-token prefixes (e.g. ##)
+                if raw_word.startswith("##"):
+                    raw_word = raw_word[2:]
+                
+                if not raw_word or len(raw_word) < 2:
+                    continue
+
                 results.append(
                     {
-                        "text": ent.get("word", ""),
+                        "text": raw_word,
                         "entity_type": mapped_type,
                         "confidence": float(ent.get("score", 0.8)),
                         "raw_id": "",
@@ -279,3 +293,4 @@ class NERExtractor:
                 )
 
         return results
+

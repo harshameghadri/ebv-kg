@@ -23,33 +23,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Sync implementation, tests, and age_engine mock helpers
-SCRATCH_DIR = "/Users/sriharshameghadri/.gemini/antigravity-cli/scratch"
-REPO_DIR = "/Volumes/Projects/ebv_KG"
+from pathlib import Path
 
-sync_files = [
-    ("graph_rag_pipeline.py", "app/retrieval/graph_rag_pipeline.py"),
-    ("test_graph_rag_pipeline.py", "tests/test_graph_rag_pipeline.py"),
-    ("age_engine.py", "app/materialization/age_engine.py"),
-]
-
-for src_name, dst_rel in sync_files:
-    src_path = os.path.join(SCRATCH_DIR, src_name)
-    dst_path = os.path.join(REPO_DIR, dst_rel)
-    if os.path.exists(src_path):
-        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-        shutil.copyfile(src_path, dst_path)
-
-TARGET_INIT = os.path.join(REPO_DIR, "app/retrieval/__init__.py")
-init_content = '''# RAG retrieval and hybrid search package
-from app.retrieval.graph_rag_pipeline import GraphRAGPipeline
-from app.retrieval.hybrid import HybridRetriever
-from app.retrieval.subgraph_pruner import SubgraphPruner
-
-__all__ = ["GraphRAGPipeline", "HybridRetriever", "SubgraphPruner"]
-'''
-with open(TARGET_INIT, "w", encoding="utf-8") as f:
-    f.write(init_content)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 from app.materialization.kuzu_engine import KuzuEngine
 from app.materialization.neo4j_client import Neo4jClient
@@ -58,6 +34,7 @@ from app.retrieval.fact_serializer import FactSerializer
 from app.retrieval.graph import GraphRetriever
 from app.retrieval.hybrid import HybridRetriever
 from app.retrieval.subgraph_pruner import SubgraphPruner
+
 
 
 class MockEmbeddingClient:
