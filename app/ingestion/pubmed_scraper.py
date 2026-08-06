@@ -162,6 +162,9 @@ class PubMedScraper:
                     if isinstance(author, dict) and "name" in author:
                         authors.append(author["name"])
 
+                pubtypes = [str(pt).lower() for pt in item.get("pubtype", [])]
+                retracted = any("retract" in pt for pt in pubtypes)
+
                 metadata_by_pmid[pmid] = {
                     "pmid": pmid,
                     "pmcid": pmcid,
@@ -170,9 +173,11 @@ class PubMedScraper:
                     "journal": item.get("source", ""),
                     "publication_date": item.get("pubdate", ""),
                     "authors": authors,
+                    "retracted": retracted,
                 }
 
         return metadata_by_pmid
+
 
     def fetch_pmc_xml(self, pmcid_or_pmid: str) -> str | None:
         """Attempt to fetch full-text JATS XML from PMC efetch API.

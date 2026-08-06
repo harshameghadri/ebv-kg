@@ -111,6 +111,7 @@ def get_neo4j_client() -> Neo4jClient:
 # --- Routes ---
 
 @router.post("/query/hybrid", response_model=RagResponse)
+@router.post("/api/v1/search", response_model=RagResponse)
 async def query_hybrid(
     req: QueryRequest,
     hybrid_retriever: HybridRetriever = Depends(get_hybrid_retriever),
@@ -148,7 +149,7 @@ async def query_hybrid(
         logger.error("Claude synthesis execution failed: %s", e)
         raise HTTPException(status_code=500, detail=f"LLM synthesis failed: {str(e)}")
         
-    elapsed = time.time() - start_time
+    elapsed = round(time.time() - start_time, 3)
     
     return RagResponse(
         query=req.query,

@@ -19,6 +19,10 @@ class NicheOverlapRequest(BaseModel):
         default=None,
         description="List of disease names or canonical IDs to filter niche overlap across."
     )
+    bridge_entity_type: str = Field(
+        default="CELL_TYPE",
+        description="Entity type acting as hypothesis bridge ('CELL_TYPE', 'EPITOPE', 'IMMUNE_EVASION_MECHANISM', 'GENE')."
+    )
     min_confidence: float = Field(
         default=0.0,
         ge=0.0,
@@ -35,6 +39,7 @@ class NicheOverlapRequest(BaseModel):
         default="auto",
         description="Data source to query ('auto', 'neo4j', or 'postgres')."
     )
+
 
 class DiseaseOutcomeInfo(BaseModel):
     id: Optional[str] = Field(default=None, description="Canonical ID of the disease outcome entity")
@@ -90,21 +95,24 @@ def _query_neo4j_niche_overlap(
     neo4j_client: Neo4jClient,
     diseases: Optional[List[str]],
     min_confidence: float,
-    limit: int
+    limit: int,
+    bridge_entity_type: str = "CELL_TYPE"
 ) -> List[NicheOverlapItem]:
-    """Execute Cypher query against Neo4j to discover CellState nodes connected to >= 2 DiseaseOutcomes."""
+    """Execute Cypher query against Neo4j to discover bridge nodes connected to >= 2 DiseaseOutcomes."""
     cypher = """
     MATCH (cs:Entity)
-    WHERE cs.entity_type IN ['CELL_STATE', 'CellState', 'CELL_TYPE'] OR 'CellState' IN labels(cs)
+    WHERE cs.entity_type = $bridge_type OR cs.entity_type IN ['CELL_STATE', 'CellState', 'CELL_TYPE'] OR 'CellState' IN labels(cs)
     MATCH (cs)-[r1]-(d:Entity)
     WHERE (d.entity_type IN ['DISEASE', 'DISEASE_OUTCOME', 'DiseaseOutcome', 'DISEASE_STATUS'] OR 'DiseaseOutcome' IN labels(d) OR 'Disease' IN labels(d))
       AND (r1.confidence_score IS NULL OR r1.confidence_score >= $min_confidence)
     """
 
     params: Dict[str, Any] = {
+        "bridge_type": bridge_entity_type.upper(),
         "min_confidence": min_confidence,
         "limit": limit
     }
+
 
     if diseases:
         cypher += """
