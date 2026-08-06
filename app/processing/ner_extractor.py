@@ -208,9 +208,17 @@ class NERExtractor:
         if self._spacy_nlp is None:
             try:
                 from transformers import pipeline
+                import os
                 import torch
-                device = 0 if torch.cuda.is_available() else -1
-                
+
+                # Default to CPU (-1) for multi-process Pueue workers to prevent CUDA OOM
+                use_cuda = (
+                    torch.cuda.is_available() 
+                    and os.getenv("USE_GPU", "").lower() in ("1", "true") 
+                    and "PUEUE_WORKER_ID" not in os.environ
+                )
+                device = 0 if use_cuda else -1
+
                 # We use a fast, high-quality multi-class biomedical NER model
                 self._spacy_nlp = pipeline(
                     "ner", 
@@ -223,6 +231,7 @@ class NERExtractor:
                     f"Could not load HuggingFace local fallback model: {e}"
                 ) from e
         return self._spacy_nlp
+
 
     def _extract_scispacy(self, text: str) -> list[dict[str, Any]]:
         """Local fallback entity extraction using HuggingFace biomedical NER pipeline."""
