@@ -19,6 +19,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+import uuid
+
 class AnnDataParser:
     """Parses single-cell RNA-seq marker datasets and AnnData objects."""
 
@@ -111,29 +113,36 @@ class AnnDataParser:
             cell_state = r["cell_state"]
             conf = r["confidence"]
 
+            gene_canon_id = f"HGNC:{gene}"
+            cell_canon_id = f"CL:{cell_state.replace(' ', '_')}"
+
+            gene_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, gene_canon_id)
+            cell_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, cell_canon_id)
+
             # 1. Upsert Gene entity
             cur.execute("""
-                INSERT INTO normalized_entities (canonical_id, name, entity_type, ontology_source)
-                VALUES (%s, %s, 'GENE', 'HGNC')
+                INSERT INTO normalized_entities (id, canonical_id, name, entity_type, ontology_source)
+                VALUES (%s, %s, %s, 'GENE', 'HGNC')
                 ON CONFLICT (canonical_id) DO NOTHING;
-            """, (f"HGNC:{gene}", gene))
+            """, (gene_uuid, gene_canon_id, gene))
             entities_inserted += cur.rowcount
 
             # 2. Upsert CellState entity
             cur.execute("""
-                INSERT INTO normalized_entities (canonical_id, name, entity_type, ontology_source)
-                VALUES (%s, %s, 'CELL_TYPE', 'CL')
+                INSERT INTO normalized_entities (id, canonical_id, name, entity_type, ontology_source)
+                VALUES (%s, %s, %s, 'CELL_TYPE', 'CL')
                 ON CONFLICT (canonical_id) DO NOTHING;
-            """, (f"CL:{cell_state.replace(' ', '_')}", cell_state))
+            """, (cell_uuid, cell_canon_id, cell_state))
             entities_inserted += cur.rowcount
 
             # 3. Upsert IS_MARKER_FOR relationship
+            rel_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, f"{gene_uuid}_{cell_uuid}_IS_MARKER_FOR")
             status = "APPROVED" if conf >= 0.80 else "PENDING"
             cur.execute("""
-                INSERT INTO relationships (source_entity_id, target_entity_id, relationship_type, confidence, curation_status)
-                VALUES (%s, %s, 'IS_MARKER_FOR', %s, %s)
+                INSERT INTO relationships (id, source_entity_id, target_entity_id, relationship_type, confidence_score, curation_status, source_type)
+                VALUES (%s, %s, %s, 'IS_MARKER_FOR', %s, %s, 'single_cell')
                 ON CONFLICT DO NOTHING;
-            """, (f"HGNC:{gene}", f"CL:{cell_state.replace(' ', '_')}", conf, status))
+            """, (rel_uuid, gene_uuid, cell_uuid, conf, status))
             relationships_inserted += cur.rowcount
 
         self.conn.commit()
@@ -142,3 +151,4 @@ class AnnDataParser:
             "inserted_entities": entities_inserted,
             "inserted_relationships": relationships_inserted
         }
+

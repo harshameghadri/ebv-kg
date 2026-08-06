@@ -94,18 +94,22 @@ def run_anndata_cli(args_list: Optional[List[str]] = None) -> Dict[str, Any]:
             if conn and summary.get("cell_types"):
                 cur = conn.cursor()
                 inserted_ct = 0
+                import uuid
                 for ct in summary["cell_types"]:
+                    cell_canon_id = f"CL:{str(ct).replace(' ', '_')}"
+                    cell_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, cell_canon_id)
                     cur.execute(
                         """
-                        INSERT INTO normalized_entities (canonical_id, name, entity_type, ontology_source)
-                        VALUES (%s, %s, 'CELL_TYPE', 'CL')
+                        INSERT INTO normalized_entities (id, canonical_id, name, entity_type, ontology_source)
+                        VALUES (%s, %s, %s, 'CELL_TYPE', 'CL')
                         ON CONFLICT (canonical_id) DO NOTHING;
                         """,
-                        (f"CL:{str(ct).replace(' ', '_')}", str(ct))
+                        (cell_uuid, cell_canon_id, str(ct))
                     )
                     inserted_ct += cur.rowcount
                 conn.commit()
                 db_saved = {"inserted_cell_types": inserted_ct}
+
 
 
             output = {
