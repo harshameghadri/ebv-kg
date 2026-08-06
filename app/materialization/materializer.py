@@ -170,23 +170,25 @@ class Materializer:
         if relationships:
             edges_by_type = defaultdict(list)
             for row in relationships:
-                ev_count = row["evidence_count"] or 0
+                ev_count = row.get("evidence_count") or 0
+                source_type = row.get("source_type") or "NER"
                 ev_tier = "DIRECT_LITERATURE_EVIDENCE" if ev_count > 0 else (
-                    "SINGLE_CELL_ASSAY" if row["source_type"] == "single_cell" else "INFERRED"
+                    "SINGLE_CELL_ASSAY" if source_type == "single_cell" else "INFERRED"
                 )
                 edge_dict = {
                     "id": str(row["id"]),
                     "source_canonical_id": row["source_canonical_id"],
                     "target_canonical_id": row["target_canonical_id"],
-                    "confidence_score": row["confidence_score"],
-                    "curation_status": row["curation_status"],
-                    "source_type": row["source_type"],
+                    "confidence_score": row.get("confidence_score", 1.0),
+                    "curation_status": row.get("curation_status", "APPROVED"),
+                    "source_type": source_type,
                     "evidence_count": ev_count,
                     "evidence_tier": ev_tier,
-                    "source_pmids": row["source_pmids"] if row["source_pmids"] is not None else [],
-                    "source_dois": row["source_dois"] if row["source_dois"] is not None else [],
+                    "source_pmids": row.get("source_pmids") or [],
+                    "source_dois": row.get("source_dois") or [],
                 }
                 edges_by_type[row["relationship_type"]].append(edge_dict)
+
 
             total_edges = 0
             for rel_type, edges in edges_by_type.items():
