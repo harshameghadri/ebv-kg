@@ -97,8 +97,8 @@ def run_anndata_cli(args_list: Optional[List[str]] = None) -> Dict[str, Any]:
                 for ct in summary["cell_types"]:
                     cur.execute(
                         """
-                        INSERT INTO normalized_entities (canonical_id, entity_name, entity_type, confidence)
-                        VALUES (%s, %s, 'CELL_TYPE', 1.0)
+                        INSERT INTO normalized_entities (canonical_id, name, entity_type, ontology_source)
+                        VALUES (%s, %s, 'CELL_TYPE', 'CL')
                         ON CONFLICT (canonical_id) DO NOTHING;
                         """,
                         (f"CL:{str(ct).replace(' ', '_')}", str(ct))
@@ -106,6 +106,7 @@ def run_anndata_cli(args_list: Optional[List[str]] = None) -> Dict[str, Any]:
                     inserted_ct += cur.rowcount
                 conn.commit()
                 db_saved = {"inserted_cell_types": inserted_ct}
+
 
             output = {
                 "status": "success",

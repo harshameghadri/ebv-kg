@@ -113,16 +113,16 @@ class AnnDataParser:
 
             # 1. Upsert Gene entity
             cur.execute("""
-                INSERT INTO normalized_entities (canonical_id, entity_name, entity_type, confidence)
-                VALUES (%s, %s, 'GENE', 1.0)
+                INSERT INTO normalized_entities (canonical_id, name, entity_type, ontology_source)
+                VALUES (%s, %s, 'GENE', 'HGNC')
                 ON CONFLICT (canonical_id) DO NOTHING;
             """, (f"HGNC:{gene}", gene))
             entities_inserted += cur.rowcount
 
             # 2. Upsert CellState entity
             cur.execute("""
-                INSERT INTO normalized_entities (canonical_id, entity_name, entity_type, confidence)
-                VALUES (%s, %s, 'CELL_TYPE', 1.0)
+                INSERT INTO normalized_entities (canonical_id, name, entity_type, ontology_source)
+                VALUES (%s, %s, 'CELL_TYPE', 'CL')
                 ON CONFLICT (canonical_id) DO NOTHING;
             """, (f"CL:{cell_state.replace(' ', '_')}", cell_state))
             entities_inserted += cur.rowcount
@@ -137,6 +137,7 @@ class AnnDataParser:
             relationships_inserted += cur.rowcount
 
         self.conn.commit()
+
         return {
             "inserted_entities": entities_inserted,
             "inserted_relationships": relationships_inserted
