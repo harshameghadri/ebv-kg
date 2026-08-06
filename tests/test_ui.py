@@ -69,7 +69,8 @@ def test_dashboard_endpoint():
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers.get("content-type", "")
-    assert "<title>EBV Knowledge System | Dashboard</title>" in response.text
+    assert "EBV Knowledge System | Open Targets Scientific Workbench" in response.text
+
 
 
 def test_pending_curation_endpoint(mock_pg_conn):
