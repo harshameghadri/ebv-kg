@@ -1,0 +1,19 @@
+gene,cluster,log2fc,p_val_adj
+TBX21,Atypical Memory B Cell,2.45,0.00001
+CXCR3,Atypical Memory B Cell,1.85,0.00004
+ITGAX,Atypical Memory B Cell,3.12,0.000001
+CD27,Atypical Memory B Cell,-1.20,0.001
+FCRL5,Atypical Memory B Cell,2.10,0.00002
+AICDA,Germinal Center B Cell,3.40,0.000001
+BCL6,Germinal Center B Cell,2.80,0.000005
+PAX5,Germinal Center B Cell,1.65,0.0002
+PRDM1,Plasmablast,3.90,0.000001
+IRF4,Plasmablast,2.95,0.000002
+SLAMF7,Plasmablast,2.15,0.000015
+CD38,Plasmablast,3.50,0.000001
+B3GAT1,Cytotoxic CD8 T Cell,2.30,0.00001
+GZMB,Cytotoxic CD8 T Cell,3.60,0.000001
+PRF1,Cytotoxic CD8 T Cell,3.10,0.000002
+IFNG,Cytotoxic CD8 T Cell,2.75,0.000008
+NCAM1,NK Cell,2.90,0.000003
+KLRD1,NK Cell,2.40,0.00001
