@@ -139,8 +139,12 @@ def test_materialize_graph_basic(mock_neo4j_client):
             "source_type": "NER",
             "source_canonical_id": "HGNC:11985",
             "target_canonical_id": "HGNC:672",
+            "evidence_count": 1,
+            "source_pmids": ["32132123"],
+            "source_dois": ["10.1038/s41586-020-2012-7"],
         }
     ]
+
 
     fake_mentions = [
         {

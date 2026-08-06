@@ -132,8 +132,8 @@ class Materializer:
                     id_property="doi",
                 )
 
-        # 3. Fetch and upsert relationships (grouped by relationship_type)
-        logger.info("Fetching relationships from PostgreSQL...")
+        # 3. Fetch and upsert relationships (grouped by relationship_type) with rich edge metadata
+        logger.info("Fetching relationships with rich evidence properties from PostgreSQL...")
         rel_query = (
             "SELECT "
             "  r.id, "
@@ -142,15 +142,26 @@ class Materializer:
             "  r.curation_status, "
             "  r.source_type, "
             "  src.canonical_id AS source_canonical_id, "
-            "  tgt.canonical_id AS target_canonical_id "
+            "  tgt.canonical_id AS target_canonical_id, "
+            "  ARRAY_AGG(DISTINCT d.pmid) FILTER (WHERE d.pmid IS NOT NULL) AS source_pmids, "
+            "  ARRAY_AGG(DISTINCT d.doi) FILTER (WHERE d.doi IS NOT NULL) AS source_dois, "
+            "  COUNT(DISTINCT ev.id) AS evidence_count "
             "FROM relationships r "
             "JOIN normalized_entities src ON r.source_entity_id = src.id "
-            "JOIN normalized_entities tgt ON r.target_entity_id = tgt.id"
+            "JOIN normalized_entities tgt ON r.target_entity_id = tgt.id "
+            "LEFT JOIN relationship_evidence ev ON r.id = ev.relationship_id "
+            "LEFT JOIN document_chunks c ON ev.chunk_id = c.id "
+            "LEFT JOIN documents d ON c.document_id = d.id "
         )
         rel_params = []
         if curation_statuses is not None:
             rel_query += " WHERE r.curation_status = ANY(%s)"
             rel_params.append(list(curation_statuses))
+
+        rel_query += (
+            " GROUP BY r.id, r.relationship_type, r.confidence_score, r.curation_status, "
+            "r.source_type, src.canonical_id, tgt.canonical_id"
+        )
 
         with pg_conn.cursor(row_factory=dict_row) as cur:
             cur.execute(rel_query, rel_params)
@@ -159,6 +170,10 @@ class Materializer:
         if relationships:
             edges_by_type = defaultdict(list)
             for row in relationships:
+                ev_count = row["evidence_count"] or 0
+                ev_tier = "DIRECT_LITERATURE_EVIDENCE" if ev_count > 0 else (
+                    "SINGLE_CELL_ASSAY" if row["source_type"] == "single_cell" else "INFERRED"
+                )
                 edge_dict = {
                     "id": str(row["id"]),
                     "source_canonical_id": row["source_canonical_id"],
@@ -166,12 +181,16 @@ class Materializer:
                     "confidence_score": row["confidence_score"],
                     "curation_status": row["curation_status"],
                     "source_type": row["source_type"],
+                    "evidence_count": ev_count,
+                    "evidence_tier": ev_tier,
+                    "source_pmids": row["source_pmids"] if row["source_pmids"] is not None else [],
+                    "source_dois": row["source_dois"] if row["source_dois"] is not None else [],
                 }
                 edges_by_type[row["relationship_type"]].append(edge_dict)
 
             total_edges = 0
             for rel_type, edges in edges_by_type.items():
-                logger.info(f"Upserting {len(edges)} '{rel_type}' edges to Neo4j...")
+                logger.info(f"Upserting {len(edges)} '{rel_type}' edges with rich properties to Neo4j...")
                 upserted = self.neo4j_client.bulk_upsert_edges(
                     rel_type=rel_type,
                     edges=edges,
@@ -182,6 +201,7 @@ class Materializer:
                 )
                 total_edges += upserted
             stats["relationships"] = total_edges
+
 
         # 4. Draw 'MENTIONS' edges between Paper and Entity nodes
         logger.info("Fetching entity evidence mentions from PostgreSQL...")
