@@ -22,15 +22,16 @@ class MockCursor:
         self.current_query = query
 
     def fetchall(self) -> list:
-        if "relationship_evidence" in self.current_query:
-            return self.results.get("relationship_evidence", [])
-        elif "FROM relationships" in self.current_query:
+        if "FROM relationships" in self.current_query:
             return self.results.get("relationships", [])
+        elif "relationship_evidence" in self.current_query or "ev.confidence_score" in self.current_query:
+            return self.results.get("relationship_evidence", [])
         elif "FROM normalized_entities" in self.current_query:
             return self.results.get("normalized_entities", [])
         elif "FROM documents" in self.current_query:
             return self.results.get("documents", [])
         return []
+
 
     def __enter__(self) -> "MockCursor":
         return self
