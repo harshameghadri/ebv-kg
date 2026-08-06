@@ -238,7 +238,12 @@ def test_materialize_graph_basic(mock_neo4j_client):
                         "confidence_score": 0.85,
                         "curation_status": "APPROVED",
                         "source_type": "NER",
+                        "evidence_count": 1,
+                        "evidence_tier": "DIRECT_LITERATURE_EVIDENCE",
+                        "source_pmids": ["32132123"],
+                        "source_dois": ["10.1038/s41586-020-2012-7"],
                     }
+
                 ],
                 source_label="Entity",
                 target_label="Entity",
