@@ -25,7 +25,14 @@ CATEGORY_MAP: dict[str, str] = {
     "UNIPROT": "uniprot",
     "ANATOMY": "uberon",
     "UBERON": "uberon",
+    "CHEMICAL": "chebi",
+    "COMPOUND": "chebi",
+    "DRUG": "chebi",
+    "CHEBI": "chebi",
+    "VIRAL_FACTOR": "viral",
+    "VIRUS": "viral",
 }
+
 
 OLS_API_URL = "https://www.ebi.ac.uk/ols4/api/search"
 
@@ -138,13 +145,8 @@ class SynonymResolver:
         cat_upper = cat_clean.upper()
         if cat_upper in CATEGORY_MAP:
             return CATEGORY_MAP[cat_upper]
-        cat_lower = cat_clean.lower()
-        if cat_lower in ("hgnc", "cl", "doid", "uniprot", "uberon"):
-            return cat_lower
-        raise ValueError(
-            f"Unsupported category: '{category}'. "
-            "Supported: HGNC/GENE, CL/CELL_TYPE, DOID/DISEASE, UNIPROT, UBERON."
-        )
+        return cat_clean.lower()
+
 
     def load_dictionary(
         self, category: str, source: str | Path | dict[str, Any] | list[Any]
