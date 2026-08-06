@@ -30,7 +30,7 @@ class SubgraphPruner:
         model_name: Optional[str] = None,
         default_top_k: int = 10,
         similarity_threshold: Optional[float] = None,
-        confidence_weight: float = 0.0,
+        confidence_weight: float = 0.5,
     ) -> None:
         """
         Initialize SubgraphPruner.
@@ -48,6 +48,7 @@ class SubgraphPruner:
         self.default_top_k = default_top_k
         self.similarity_threshold = similarity_threshold
         self.confidence_weight = max(0.0, min(1.0, confidence_weight))
+
 
     @property
     def embedding_client(self) -> Any:
