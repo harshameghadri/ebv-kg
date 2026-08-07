@@ -50,8 +50,22 @@ class EmbeddingClient:
         """Lazy load the sentence-transformers model."""
         if self._model is None:
             from sentence_transformers import SentenceTransformer
-            self._model = SentenceTransformer(self.model_name, device=self.device)
+            try:
+                self._model = SentenceTransformer(self.model_name, device=self.device)
+            except Exception as e:
+                fallback_name = (
+                    "allenai/specter2_base" 
+                    if "specter2" in self.model_name.lower() 
+                    else "sentence-transformers/all-mpnet-base-v2"
+                )
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Failed to load embedding model '%s' (%s). Falling back to '%s'.",
+                    self.model_name, e, fallback_name
+                )
+                self._model = SentenceTransformer(fallback_name, device=self.device)
         return self._model
+
 
     def _get_bge_m3_flag_model(self) -> Any:
         """Lazy load the BGEM3FlagModel if FlagEmbedding is available."""
