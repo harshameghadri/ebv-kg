@@ -40,10 +40,11 @@ class ETLPipeline:
         self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD", "password")
         staging_env = os.getenv("FAST_STAGING_DIR") or os.getenv("STAGING_DIR")
-        if staging_env and staging_dir == "data/staging":
+        if staging_env:
             self.staging_dir = Path(staging_env)
         else:
             self.staging_dir = Path(staging_dir)
+
 
 
     def run_etl_pipeline(self, query: str, max_articles: int = 5) -> Dict[str, Any]:

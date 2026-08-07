@@ -58,9 +58,14 @@ class SynonymResolver:
         fuzzy_threshold: float = 0.8,
     ):
         """Initialize SynonymResolver."""
-        self.ols_enabled = ols_enabled
-        self.ols_timeout = ols_timeout
+        ols_env = os.getenv("ENABLE_OLS", "").lower()
+        if ols_env in ("false", "0", "no"):
+            self.ols_enabled = False
+        else:
+            self.ols_enabled = ols_enabled
+        self.ols_timeout = 1.5 if ols_timeout == 5.0 else ols_timeout
         self.fuzzy_threshold = fuzzy_threshold
+
         self.ols_consecutive_failures = 0
         self.ols_cooldown_until = 0.0
         self.ols_cooldown_duration = 300.0  # 5 minutes
