@@ -38,11 +38,12 @@ class PubMedScraper:
         self.staging_dir = Path(staging_dir)
         self.xml_dir = self.staging_dir / "xml"
         self.metadata_dir = self.staging_dir / "metadata"
-        self.email = email
-        self.api_key = api_key
+        self.email = email or os.getenv("NCBI_EMAIL") or os.getenv("ENTREZ_EMAIL") or "harshameghadri@gmail.com"
+        self.api_key = api_key or os.getenv("NCBI_KEY") or os.getenv("NCBI_API_KEY")
 
         self.xml_dir.mkdir(parents=True, exist_ok=True)
         self.metadata_dir.mkdir(parents=True, exist_ok=True)
+
 
     def _build_params(self, base_params: dict[str, Any]) -> dict[str, Any]:
         """Add email and api_key to request parameters if provided."""

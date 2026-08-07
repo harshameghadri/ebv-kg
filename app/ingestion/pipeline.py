@@ -39,8 +39,12 @@ class ETLPipeline:
         self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD", "password")
-        self.neo4j_database = neo4j_database or os.getenv("NEO4J_DATABASE", "neo4j")
-        self.staging_dir = Path(staging_dir)
+        staging_env = os.getenv("FAST_STAGING_DIR") or os.getenv("STAGING_DIR")
+        if staging_env and staging_dir == "data/staging":
+            self.staging_dir = Path(staging_env)
+        else:
+            self.staging_dir = Path(staging_dir)
+
 
     def run_etl_pipeline(self, query: str, max_articles: int = 5) -> Dict[str, Any]:
         """Execute the complete end-to-end ETL pipeline.
