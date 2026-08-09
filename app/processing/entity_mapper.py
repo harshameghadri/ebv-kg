@@ -146,22 +146,42 @@ class EntityMapper:
                 parsed_json = doc_metadata.get("parsed_json")
                 parsed_json_str = json.dumps(parsed_json) if parsed_json is not None else None
 
-                # Concurrent-safe atomic document upsert
-                cursor.execute(
-                    """
-                    INSERT INTO documents (id, doi, pmid, title, journal, published_date, parsed_json)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (id) DO UPDATE 
-                    SET doi = EXCLUDED.doi, pmid = EXCLUDED.pmid, title = EXCLUDED.title, 
-                        journal = EXCLUDED.journal, published_date = EXCLUDED.published_date, 
-                        parsed_json = EXCLUDED.parsed_json
-                    RETURNING id;
-                    """,
-                    (doc_id, doi, pmid, title, journal, pub_date, parsed_json_str)
-                )
-                row = cursor.fetchone()
-                if row:
-                    doc_id = row[0]
+                # Concurrent-safe atomic document upsert by ID, DOI, or PMID
+                try:
+                    cursor.execute(
+                        """
+                        INSERT INTO documents (id, doi, pmid, title, journal, published_date, parsed_json)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO UPDATE 
+                        SET doi = COALESCE(EXCLUDED.doi, documents.doi), 
+                            pmid = COALESCE(EXCLUDED.pmid, documents.pmid), 
+                            title = COALESCE(EXCLUDED.title, documents.title), 
+                            journal = COALESCE(EXCLUDED.journal, documents.journal), 
+                            published_date = COALESCE(EXCLUDED.published_date, documents.published_date), 
+                            parsed_json = COALESCE(EXCLUDED.parsed_json, documents.parsed_json)
+                        RETURNING id;
+                        """,
+                        (doc_id, doi, pmid, title, journal, pub_date, parsed_json_str)
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        doc_id = row[0]
+                except psycopg.errors.UniqueViolation:
+                    # Fallback query if concurrent worker inserted matching DOI or PMID
+                    conn.rollback()
+                    with conn.cursor() as retry_cur:
+                        if doi:
+                            retry_cur.execute("SELECT id FROM documents WHERE doi = %s", (doi,))
+                            r = retry_cur.fetchone()
+                            if r:
+                                doc_id = r[0]
+                        if not doc_id and pmid:
+                            retry_cur.execute("SELECT id FROM documents WHERE pmid = %s", (pmid,))
+                            r = retry_cur.fetchone()
+                            if r:
+                                doc_id = r[0]
+
+
 
                 # 2. Insert/Upsert Text Chunks
                 inserted_chunks = []
