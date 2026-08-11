@@ -236,7 +236,11 @@ class NERExtractor:
                 import os
                 import torch
 
+                torch.set_num_threads(2)
+                torch.set_num_interop_threads(1)
+
                 # Default to CPU (-1) for multi-process Pueue workers to prevent CUDA OOM
+
                 use_cuda = (
                     torch.cuda.is_available() 
                     and os.getenv("USE_GPU", "").lower() in ("1", "true") 

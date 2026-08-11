@@ -4,7 +4,22 @@ import argparse
 import logging
 import os
 import sys
+
+# Prevent multi-process thread thrashing across parallel worker slots
+os.environ["OMP_NUM_THREADS"] = "2"
+os.environ["MKL_NUM_THREADS"] = "2"
+os.environ["OPENBLAS_NUM_THREADS"] = "2"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "2"
+os.environ["NUMEXPR_NUM_THREADS"] = "2"
+try:
+    import torch
+    torch.set_num_threads(2)
+    torch.set_num_interop_threads(1)
+except Exception:
+    pass
+
 import psycopg
+
 
 from app.database.schema import init_db_schema
 from app.retrieval.vector import LanceDBClient
