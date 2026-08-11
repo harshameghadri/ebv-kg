@@ -79,26 +79,33 @@ class NERExtractor:
         if not text or not text.strip():
             return []
 
-        bern2_err: Exception | None = None
-        # 1. Try Bern2 API first
-        try:
-            return self._extract_bern2(text)
-        except Exception as e:
-            bern2_err = e
-            logger.warning(
-                "Bern2 API extraction failed (%s). Falling back to SciSpacy model '%s'.",
-                e,
-                self.spacy_model,
-            )
+        import os
+        enable_bern2 = os.getenv("ENABLE_BERN2", "false").lower() in ("1", "true", "yes")
 
-        # 2. Fallback to SciSpacy
+        bern2_err: Exception | None = None
+        # 1. Try Bern2 API if explicitly enabled
+        if enable_bern2:
+            try:
+                return self._extract_bern2(text)
+            except Exception as e:
+                bern2_err = e
+                logger.warning(
+                    "Bern2 API extraction failed (%s). Falling back to SciSpacy model '%s'.",
+                    e,
+                    self.spacy_model,
+                )
+
+        # 2. Fast local SciSpacy pipeline
         try:
             return self._extract_scispacy(text)
         except Exception as scispacy_err:
-            raise NERExtractorError(
-                f"Both Bern2 API and SciSpacy fallback failed to extract entities. "
-                f"Bern2 error: {bern2_err}; SciSpacy error: {scispacy_err}"
-            ) from scispacy_err
+            logger.error("SciSpacy fallback extraction also failed: %s", scispacy_err)
+            if bern2_err:
+                raise NERExtractorError(
+                    f"Both Bern2 and SciSpacy failed. Bern2: {bern2_err}, SciSpacy: {scispacy_err}"
+                ) from scispacy_err
+            raise NERExtractorError(f"SciSpacy extraction failed: {scispacy_err}") from scispacy_err
+
 
     def _extract_bern2(self, text: str) -> list[dict[str, Any]]:
         """Call Bern2 web API with retries for rate limits and server errors."""
