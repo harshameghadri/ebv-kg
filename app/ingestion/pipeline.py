@@ -39,7 +39,9 @@ class ETLPipeline:
         self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD", "password")
+        self.neo4j_database = neo4j_database or os.getenv("NEO4J_DATABASE")
         staging_env = os.getenv("FAST_STAGING_DIR") or os.getenv("STAGING_DIR")
+
         if staging_env:
             self.staging_dir = Path(staging_env)
         else:
