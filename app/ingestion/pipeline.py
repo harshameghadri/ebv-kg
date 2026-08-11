@@ -183,6 +183,7 @@ class ETLPipeline:
         # Step 4: Materialize to Neo4j
         logger.info("Step 4: Materialize to Neo4j")
         pg_conn_neo4j = psycopg.connect(self.pg_dsn)
+        neo4j_client = None
         try:
             neo4j_client = Neo4jClient(
                 uri=self.neo4j_uri,
@@ -197,8 +198,10 @@ class ETLPipeline:
                 curation_statuses=["APPROVED", "PENDING"]
             )
         finally:
-            neo4j_client.close()
+            if neo4j_client:
+                neo4j_client.close()
             pg_conn_neo4j.close()
+
 
         return {
             "query": query,

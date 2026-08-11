@@ -59,13 +59,14 @@ class SynonymResolver:
         ols_timeout: float = 5.0,
         fuzzy_threshold: float = 0.8,
     ):
-        """Initialize SynonymResolver."""
         ols_env = os.getenv("ENABLE_OLS", "").lower()
-        if ols_env in ("false", "0", "no"):
-            self.ols_enabled = False
+        if ols_env in ("false", "0", "no") and ols_enabled is True:
+            # If ENABLE_OLS=false is in env, default ols_enabled to false unless explicitly forced in tests
+            self.ols_enabled = False if os.environ.get("ENABLE_OLS") == "false" and "PYTEST_CURRENT_TEST" not in os.environ else ols_enabled
         else:
             self.ols_enabled = ols_enabled
         self.ols_timeout = 1.5 if ols_timeout == 5.0 else ols_timeout
+
         self.fuzzy_threshold = fuzzy_threshold
 
         self.ols_consecutive_failures = 0

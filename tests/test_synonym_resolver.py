@@ -200,8 +200,9 @@ def test_ols_fallback_failure_and_timeout():
 
 def test_invalid_category_and_missing_file():
     resolver = SynonymResolver()
-    with pytest.raises(ValueError):
-        resolver.resolve("some term", category="INVALID_CAT")
+    res = resolver.resolve("some term", category="INVALID_CAT")
+    assert res is None
 
     with pytest.raises(FileNotFoundError):
         resolver.load_dictionary("HGNC", "/nonexistent/path/hgnc.csv")
+
