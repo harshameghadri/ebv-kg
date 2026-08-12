@@ -102,7 +102,9 @@ def render_dashboard(watch=False):
             elif "Done" in status_obj:
                 finished_tasks.append((tid, query, t))
 
-        os.system("clear" if os.name == "posix" else "cls")
+        if watch:
+            os.system("clear" if os.name == "posix" and os.getenv("TERM") else "cls" if os.name == "nt" else "")
+
         print("==================================================================================")
         print("                 🔬 EBV KNOWLEDGE SYSTEM - QUEUE PROGRESS MONITOR                 ")
         print("==================================================================================")
