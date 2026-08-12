@@ -81,6 +81,8 @@ class ETLPipeline:
         # Connect to PostgreSQL for writes
         pg_conn = psycopg.connect(self.pg_dsn)
         processed_docs_count = 0
+        processed_doc_ids = []
+
 
         try:
             # Collect unique absolute file paths to process
@@ -109,9 +111,12 @@ class ETLPipeline:
                 logger.info("Parsing JATS XML file: %s", xml_path)
                 try:
                     parsed = pmc_parser.parse(xml_path)
-                    processed_docs_count += self._process_parsed_doc(
+                    cnt, did = self._process_parsed_doc(
                         pg_conn, parsed, ner_extractor, entity_mapper
                     )
+                    processed_docs_count += cnt
+                    if did:
+                        processed_doc_ids.append(did)
                 except Exception as e:
                     logger.error("Failed to parse/map JATS XML at %s: %s", xml_path, e)
                     # Fail loud if needed, or propagate
@@ -122,9 +127,12 @@ class ETLPipeline:
                 logger.info("Parsing PDF file: %s", pdf_path)
                 try:
                     parsed = pdf_extractor.parse(pdf_path)
-                    processed_docs_count += self._process_parsed_doc(
+                    cnt, did = self._process_parsed_doc(
                         pg_conn, parsed, ner_extractor, entity_mapper
                     )
+                    processed_docs_count += cnt
+                    if did:
+                        processed_doc_ids.append(did)
                 except Exception as e:
                     logger.error("Failed to parse/map PDF at %s: %s", pdf_path, e)
                     raise e
@@ -152,9 +160,13 @@ class ETLPipeline:
                             "text_chunks": text_chunks,
                             "references": meta.get("references") or []
                         }
-                        processed_docs_count += self._process_parsed_doc(
+                        cnt, did = self._process_parsed_doc(
                             pg_conn, parsed, ner_extractor, entity_mapper
                         )
+                        processed_docs_count += cnt
+                        if did:
+                            processed_doc_ids.append(did)
+
                 except Exception as e:
                     logger.error("Failed to parse/map abstract JSON at %s: %s", meta_path, e)
                     raise e
@@ -164,10 +176,8 @@ class ETLPipeline:
 
         # Step 3: Index Chunks to LanceDB
         logger.info("Step 3: Index Chunks to LanceDB")
-        # Re-open PG conn for steps that expect their own session or connections
         pg_conn_lancedb = psycopg.connect(self.pg_dsn)
         try:
-            # Dynamically determine the embedding model's dimensions
             emb_client = EmbeddingClient()
             sample_emb = emb_client.embed_query("init_sample")
             vector_dim = len(sample_emb) if sample_emb else 384
@@ -178,9 +188,10 @@ class ETLPipeline:
                 embedding_client=emb_client,
                 vector_client=lancedb_client
             )
-            indexed_chunks = embeddings_pipeline.index_pending_chunks(conn=pg_conn_lancedb)
+            indexed_chunks = embeddings_pipeline.index_pending_chunks(conn=pg_conn_lancedb, doc_ids=processed_doc_ids)
         finally:
             pg_conn_lancedb.close()
+
 
         # Step 4: Materialize to Neo4j
         logger.info("Step 4: Materialize to Neo4j")
@@ -237,10 +248,11 @@ class ETLPipeline:
                 ent["chunk_index"] = idx
                 ner_results.append(ent)
 
-        entity_mapper.map_document_content(
+        doc_id = entity_mapper.map_document_content(
             conn=pg_conn,
             doc_metadata=parsed["metadata"],
             text_chunks=text_chunks,
             ner_results=ner_results
         )
-        return 1
+        return 1, doc_id
+

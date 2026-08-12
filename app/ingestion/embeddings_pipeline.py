@@ -32,15 +32,16 @@ class EmbeddingsPipeline:
         self.embedding_client = embedding_client or EmbeddingClient()
         self.vector_client = vector_client or LanceDBClient()
 
-    def index_pending_chunks(self, conn: Any, batch_size: int = 64) -> int:
+    def index_pending_chunks(self, conn: Any, batch_size: int = 64, doc_ids: Optional[list[str]] = None) -> int:
         """
-        Queries the PostgreSQL database for all document chunks, filters out
+        Queries the PostgreSQL database for document chunks, filters out
         those already indexed in LanceDB, generates embeddings for the new ones,
         and saves them to LanceDB.
 
         Args:
             conn: A psycopg Connection object.
             batch_size: The batch size for processing embeddings and writes.
+            doc_ids: Optional list of document IDs to process specifically.
 
         Returns:
             The total count of successfully indexed chunks.
@@ -64,15 +65,27 @@ class EmbeddingsPipeline:
             except Exception as e:
                 logger.warning(f"Could not read existing IDs from LanceDB: {e}")
 
-        # Fetch all document chunks and their associated document metadata from PostgreSQL
+        # Fetch document chunks from PostgreSQL (filter by doc_ids if specified for instant execution)
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                "SELECT c.id AS chunk_id, c.document_id, c.chunk_index, c.content, "
-                "d.pmid, d.doi, d.title "
-                "FROM document_chunks c "
-                "JOIN documents d ON c.document_id = d.id"
-            )
+            if doc_ids:
+                cur.execute(
+                    "SELECT c.id AS chunk_id, c.document_id, c.chunk_index, c.content, "
+                    "d.pmid, d.doi, d.title "
+                    "FROM document_chunks c "
+                    "JOIN documents d ON c.document_id = d.id "
+                    "WHERE c.document_id = ANY(%s)",
+                    (doc_ids,)
+                )
+            else:
+                cur.execute(
+                    "SELECT c.id AS chunk_id, c.document_id, c.chunk_index, c.content, "
+                    "d.pmid, d.doi, d.title "
+                    "FROM document_chunks c "
+                    "JOIN documents d ON c.document_id = d.id "
+                    "ORDER BY c.id DESC LIMIT 2000"
+                )
             rows = cur.fetchall()
+
 
         # Filter for chunks that have not yet been indexed
         pending_rows = []
