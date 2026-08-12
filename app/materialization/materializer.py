@@ -41,15 +41,14 @@ class Materializer:
         self.neo4j_client.clear_graph()
 
     def materialize_graph(
-        self, pg_conn: Any, curation_statuses: list[str] | None = None
+        self, pg_conn: Any, curation_statuses: list[str] | None = None, limit_latest: int | None = 500
     ) -> dict[str, int]:
         """Materializes nodes and edges from PostgreSQL to Neo4j.
 
         Args:
             pg_conn: A psycopg Connection object.
-            curation_statuses: If specified, only sync relationships
-                               (and their mentions) with these curation
-                               statuses. E.g., ['APPROVED'].
+            curation_statuses: If specified, only sync relationships with these statuses.
+            limit_latest: If specified, limit relationship sync to the N most recent entries.
 
         Returns:
             A dictionary containing counts of upserted entities, papers, relationships,
@@ -62,6 +61,25 @@ class Materializer:
             "relationships": 0,
             "mentions": 0,
         }
+
+        # Query relationships
+        rel_query = """
+            SELECT r.id, r.subject_id, r.object_id, r.predicate, r.confidence_score, r.curation_status,
+                   e1.name AS subject_name, e1.category AS subject_type, e1.canonical_id AS subject_cid,
+                   e2.name AS object_name, e2.category AS object_type, e2.canonical_id AS object_cid
+            FROM relationships r
+            JOIN normalized_entities e1 ON r.subject_id = e1.id
+            JOIN normalized_entities e2 ON r.object_id = e2.id
+        """
+        params = []
+        if curation_statuses:
+            rel_query += " WHERE r.curation_status = ANY(%s)"
+            params.append(curation_statuses)
+        rel_query += " ORDER BY r.id DESC"
+        if limit_latest:
+            rel_query += " LIMIT %s"
+            params.append(limit_latest)
+
 
         # 1. Fetch and upsert Entity nodes
         logger.info("Fetching entities from PostgreSQL...")
