@@ -157,12 +157,19 @@ class HybridRetriever:
             if pg_dsn:
                 with psycopg.connect(pg_dsn, row_factory=dict_row) as conn:
                     with conn.cursor() as cur:
-                        keywords = [w.strip() for w in query.split() if len(w.strip()) > 2 and w.strip().lower() not in ("and", "the", "for", "with", "from")]
-                        if keywords:
-                            # Primary match: all keywords or key acronyms (e.g. EBNA1)
-                            where_clauses = ["c.content ILIKE %s" for _ in keywords]
+                        # Filter out generic stop-words AND generic scientific nouns (role, modifying, host, structure)
+                        generic_stopwords = {
+                            "and", "the", "for", "with", "from", "that", "this", "role", "modifying", 
+                            "host", "structure", "function", "effect", "mechanism", "study", "analysis",
+                            "protein", "gene", "cell", "cells", "type", "types", "expression", "involved"
+                        }
+                        bio_keywords = [w.strip() for w in query.split() if len(w.strip()) > 2 and w.strip().lower() not in generic_stopwords]
+                        
+                        if bio_keywords:
+                            # Primary match: MUST contain key biological entities (e.g. RPMS1, chromatin)
+                            where_clauses = ["c.content ILIKE %s" for _ in bio_keywords]
                             and_sql = " AND ".join(where_clauses)
-                            params = [f"%{k}%" for k in keywords] + [s_limit]
+                            params = [f"%{k}%" for k in bio_keywords] + [s_limit]
                             
                             cur.execute(f"""
                                 SELECT c.id, c.document_id, c.chunk_index, c.content, d.pmid, d.doi, d.title
@@ -173,10 +180,10 @@ class HybridRetriever:
                             """, params)
                             rows = cur.fetchall()
                             
-                            # Fallback if AND returns few results: OR match
+                            # Fallback if AND returns few results: match key bio entities with OR
                             if len(rows) < s_limit // 2:
                                 or_sql = " OR ".join(where_clauses)
-                                params_or = [f"%{k}%" for k in keywords] + [s_limit]
+                                params_or = [f"%{k}%" for k in bio_keywords] + [s_limit]
                                 cur.execute(f"""
                                     SELECT c.id, c.document_id, c.chunk_index, c.content, d.pmid, d.doi, d.title
                                     FROM document_chunks c
@@ -184,7 +191,11 @@ class HybridRetriever:
                                     WHERE {or_sql}
                                     LIMIT %s
                                 """, params_or)
-                                rows.extend(cur.fetchall())
+                                # Filter out any row that does not contain at least one bio_keyword
+                                for r in cur.fetchall():
+                                    cnt_matches = sum(1 for bk in bio_keywords if bk.lower() in (r.get("content") or "").lower() or bk.lower() in (r.get("title") or "").lower())
+                                    if cnt_matches >= 1:
+                                        rows.append(r)
                             
                             seen_ids = {s.get("id") for s in sparse_results}
                             for r in rows:
@@ -193,6 +204,7 @@ class HybridRetriever:
                                     r["score"] = 0.9
                                     sparse_results.append(r)
                                     seen_ids.add(rid)
+
         except Exception as pg_err:
             print(f"Warning: PostgreSQL sparse retrieval failed: {pg_err}")
 

@@ -167,17 +167,58 @@ async def query_hybrid(
         
     elapsed = round(time.time() - start_time, 3)
 
-    # Format pruned facts from retrieved chunks / graph
+    # Format true SPOKE knowledge graph relationship triples for pruned_facts
     pruned_facts = []
-    for c in chunks:
-        pruned_facts.append({
-            "subject": c.get("title") or "EBV Literature Chunk",
-            "subject_type": "GENE",
-            "predicate": "mentions",
-            "object": c.get("content", "")[:60] + "..",
-            "object_type": "DISEASE",
-            "confidence": float(c.get("score") or 0.85)
-        })
+    try:
+        pg_dsn = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DSN")
+        if pg_dsn:
+            with psycopg.connect(pg_dsn, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    # Extract biological entity names from query
+                    bio_terms = [w.strip() for w in query_str.split() if len(w.strip()) > 2 and w.strip().lower() not in {"role", "modifying", "host", "structure", "function", "effect", "mechanism"}]
+                    if bio_terms:
+                        where_or = " OR ".join(["e1.name ILIKE %s OR e2.name ILIKE %s" for _ in bio_terms])
+                        params = []
+                        for bt in bio_terms:
+                            params.extend([f"%{bt}%", f"%{bt}%"])
+                        params.append(8)
+                        
+                        sql = f"""
+                            SELECT e1.name AS subject, e1.category AS subject_type,
+                                   r.predicate,
+                                   e2.name AS object, e2.category AS object_type,
+                                   r.confidence_score AS confidence
+                            FROM relationships r
+                            JOIN normalized_entities e1 ON r.subject_id = e1.id
+                            JOIN normalized_entities e2 ON r.object_id = e2.id
+                            WHERE {where_or}
+                            LIMIT %s
+                        """
+                        cur.execute(sql, params)
+                        for r in cur.fetchall():
+                            pruned_facts.append({
+                                "subject": r.get("subject") or "EBV Entity",
+                                "subject_type": r.get("subject_type") or "GENE",
+                                "predicate": r.get("predicate") or "ASSOCIATED_WITH",
+                                "object": r.get("object") or "Host Factor",
+                                "object_type": r.get("object_type") or "PATHWAY",
+                                "confidence": float(r.get("confidence") or 0.85)
+                            })
+    except Exception as rel_err:
+        logger.warning("Error fetching pruned facts triples: %s", rel_err)
+
+    # Fallback if no specific graph triples matched query
+    if not pruned_facts:
+        for c in chunks[:5]:
+            pruned_facts.append({
+                "subject": c.get("pmid") and f"PMID:{c.get('pmid')}" or "Literature Evidence",
+                "subject_type": "PAPER",
+                "predicate": "EVIDENCE_FOR",
+                "object": (c.get("title") or "EBV Research Study")[:50],
+                "object_type": "FINDING",
+                "confidence": float(c.get("score") or 0.85)
+            })
+
     
     return RagResponse(
         query=query_str,
