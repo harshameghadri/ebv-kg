@@ -28,12 +28,22 @@ def get_pueue_status():
 
 def parse_task_log(task_id, pueue_bin):
     """Parse log for a running task to extract step, query, and paper progress."""
-    try:
-        res = subprocess.check_output(
-            [pueue_bin, "log", str(task_id)], stderr=subprocess.DEVNULL
-        ).decode("utf-8", errors="ignore")
-    except Exception:
-        return {"step": "Starting", "processed": 0, "total": 0, "current_file": "N/A", "pct": 0.0}
+    res = ""
+    log_file = Path.home() / ".local/share/pueue/task_logs" / f"{task_id}.log"
+    if log_file.exists():
+        try:
+            res = log_file.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            pass
+
+    if not res:
+        try:
+            res = subprocess.check_output(
+                [pueue_bin, "log", str(task_id)], stderr=subprocess.DEVNULL
+            ).decode("utf-8", errors="ignore")
+        except Exception:
+            return {"step": "Starting", "processed": 0, "total": 0, "current_file": "N/A", "pct": 0.0}
+
 
 
     # Extract Scraper total found
