@@ -530,14 +530,20 @@
             <button class="tab-btn" onclick="switchTab('curation', event)">⚖️ Human Curation</button>
         </div>
 
-        <div class="search-box-row">
-            <input type="text" id="query-input" class="search-input" value="What is the molecular mimicry mechanism between EBNA1 and GlialCAM in Multiple Sclerosis?" placeholder="Search biomedical targets, pathways, viral genes, or disease outcomes...">
+        <div class="search-box-row" style="position: relative;">
+            <input type="text" id="query-input" class="search-input" value="EBNA1 binding to oriP DNA replication origin" placeholder="Search biomedical targets, pathways, viral genes, or disease outcomes..." oninput="handleAutocomplete(this.value)" autocomplete="off">
             <button class="btn-search" onclick="runGraphRAG()">Search Evidence</button>
+            <div id="autocomplete-list" style="position: absolute; top: 100%; left: 0; right: 180px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 0 0 6px 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 999; display: none;"></div>
         </div>
 
         <div class="preset-prompts">
-            <span class="prompt-label">Target Queries:</span>
+            <span class="prompt-label">Quick Queries:</span>
+            <button class="prompt-btn" onclick="setQuery('EBNA1 binding to oriP DNA replication origin')">EBNA1 ➔ oriP Replication</button>
+            <button class="prompt-btn" onclick="setQuery('EBNA1 expression in Post-Transplant Lymphoproliferative Disorder (PTLD)')">EBNA1 ➔ PTLD Expression</button>
             <button class="prompt-btn" onclick="setQuery('What is the molecular mimicry mechanism between EBNA1 and GlialCAM in Multiple Sclerosis?')">EBNA1 ➔ GlialCAM Cross-Reactivity</button>
+            <button class="prompt-btn" onclick="setQuery('LMP1 activation of NF-kB signaling pathway in Burkitt Lymphoma')">LMP1 ➔ NF-kB Signaling</button>
+        </div>
+
             <button class="prompt-btn" onclick="setQuery('How does LMP1 activate NF-kB signaling and evade apoptosis in Burkitt Lymphoma?')">LMP1 ➔ NF-kB Signalling</button>
             <button class="prompt-btn" onclick="setQuery('Which metabolic enzymes (SCD1) are targeted by Withaferin A in EBV-transformed B cells?')">Withaferin A ➔ SCD1 Downregulation</button>
             <button class="prompt-btn" onclick="setQuery('What are the single-cell marker genes for atypical memory B cells in PTLD?')">Atypical B Cells in PTLD</button>
@@ -750,10 +756,47 @@
         if (tabId === 'curation') fetchCurationData();
     }
 
+    let autocompleteTimer = null;
+    async function handleAutocomplete(val) {
+        clearTimeout(autocompleteTimer);
+        const listDiv = document.getElementById('autocomplete-list');
+        if (!val || val.length < 2) {
+            listDiv.style.display = 'none';
+            return;
+        }
+        autocompleteTimer = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/v1/suggest?q=${encodeURIComponent(val)}`);
+                const data = await res.json();
+                const suggestions = data.suggestions || [];
+                if (suggestions.length === 0) {
+                    listDiv.style.display = 'none';
+                    return;
+                }
+                listDiv.innerHTML = suggestions.map(s => 
+                    `<div style="padding: 0.6rem 1rem; font-size: 0.85rem; color: var(--brand-navy); cursor: pointer; border-bottom: 1px solid var(--border-subtle);" onclick="setQuery('${s.replace(/'/g, "\\'")}'); document.getElementById('autocomplete-list').style.display='none';">${s}</div>`
+                ).join('');
+                listDiv.style.display = 'block';
+            } catch(e) {
+                listDiv.style.display = 'none';
+            }
+        }, 150);
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-box-row')) {
+            const listDiv = document.getElementById('autocomplete-list');
+            if (listDiv) listDiv.style.display = 'none';
+        }
+    });
+
     function setQuery(text) {
         document.getElementById('query-input').value = text;
+        const listDiv = document.getElementById('autocomplete-list');
+        if (listDiv) listDiv.style.display = 'none';
         runGraphRAG();
     }
+
 
     async function runGraphRAG() {
         const query = document.getElementById('query-input').value.trim();

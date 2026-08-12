@@ -192,6 +192,55 @@ async def query_hybrid(
     )
 
 
+# In-memory query result cache for sub-second repeat responses
+_query_cache: Dict[str, Any] = {}
+
+@router.get("/v1/suggest")
+@router.get("/api/v1/suggest")
+async def suggest_search_terms(q: str = ""):
+    """Fast autocomplete endpoint offering domain-specific EBV search suggestions."""
+    if not q or len(q.strip()) < 2:
+        return {"suggestions": []}
+
+    q_clean = q.strip().lower()
+    predefined_topics = [
+        "EBNA1 binding to oriP DNA replication origin",
+        "EBNA1 expression in Post-Transplant Lymphoproliferative Disorder (PTLD)",
+        "EBNA1 role in episomal maintenance and viral latency",
+        "EBNA1 immune evasion via glycine-alanine repeat domain",
+        "LMP1 activation of NF-kB signaling pathway",
+        "LMP1 expression in Hodgkin Lymphoma",
+        "EBV glycoprotein gH/gL entry complex in B cells",
+        "EBV mononucleosis primary infection pathogenesis",
+        "EBV Gastric carcinoma molecular subtypes",
+        "Acyclovir mechanism of action against EBV thymidine kinase"
+    ]
+
+    matched = [t for t in predefined_topics if q_clean in t.lower()]
+
+    # Query PostgreSQL entities table for matching entity symbols
+    pg_dsn = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DSN")
+    if pg_dsn and len(matched) < 5:
+        try:
+            with psycopg.connect(pg_dsn, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT DISTINCT name, category FROM entities WHERE name ILIKE %s LIMIT 5",
+                        (f"{q_clean}%",)
+                    )
+                    rows = cur.fetchall()
+                    for r in rows:
+                        name = r["name"]
+                        cat = r.get("category", "")
+                        suggestion = f"{name} ({cat})" if cat else name
+                        if suggestion not in matched:
+                            matched.append(suggestion)
+        except Exception:
+            pass
+
+    return {"suggestions": matched[:8]}
+
+
 @router.get("/graph/explore/{entity_id}")
 async def explore_graph(
     entity_id: str,
