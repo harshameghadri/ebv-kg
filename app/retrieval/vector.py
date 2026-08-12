@@ -163,9 +163,13 @@ class LanceDBClient:
         if self._table is None:
             self.init_table()
 
-        # Execute search query
-        query = self._table.search(vector).metric(metric).limit(limit)
+        # Execute search query safely specifying vector column name
+        try:
+            query = self._table.search(vector, vector_column_name="vector").metric(metric).limit(limit)
+        except TypeError:
+            query = self._table.search(vector).metric(metric).limit(limit)
         results = query.to_list()
+
 
         output = []
         for item in results:

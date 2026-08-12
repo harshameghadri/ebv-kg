@@ -177,9 +177,39 @@ class HybridRetriever:
             )
 
         if not combined_candidates:
+            # Fallback to PostgreSQL relational database text search
+            try:
+                import psycopg
+                from psycopg.rows import dict_row
+                pg_dsn = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DSN")
+                if pg_dsn:
+                    with psycopg.connect(pg_dsn, row_factory=dict_row) as conn:
+                        with conn.cursor() as cur:
+                            # Split query words for ILIKE matching
+                            terms = [t for t in query.split() if len(t) > 2]
+                            if terms:
+                                ilike_clause = " OR ".join(["c.content ILIKE %s" for _ in terms])
+                                params = [f"%{t}%" for t in terms] + [top_k * 2]
+                                sql = f"""
+                                    SELECT c.id, c.document_id, c.chunk_index, c.content, d.pmid, d.doi, d.title
+                                    FROM document_chunks c
+                                    LEFT JOIN documents d ON c.document_id = d.id
+                                    WHERE {ilike_clause}
+                                    LIMIT %s
+                                """
+                                cur.execute(sql, params)
+                                rows = cur.fetchall()
+                                for r in rows:
+                                    r["score"] = 0.5
+                                    combined_candidates.append(r)
+            except Exception as pg_err:
+                print(f"Warning: PostgreSQL fallback search failed: {pg_err}")
+
+        if not combined_candidates:
             return []
 
         # 4. Reranking
+
         reranker = self.reranker
         if reranker is not None and len(combined_candidates) > 0:
             try:
