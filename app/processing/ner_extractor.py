@@ -268,7 +268,26 @@ class NERExtractor:
     def _extract_scispacy(self, text: str) -> list[dict[str, Any]]:
         """Local fallback entity extraction using HuggingFace biomedical NER pipeline."""
         nlp = self._get_spacy_nlp()
-        entities = nlp(text)
+
+        # Split long text chunks into ~400 char segments to fit Transformer max token limits
+        max_chunk_len = 450
+        text_segments = []
+        if len(text) > max_chunk_len:
+            words = text.split()
+            current_segment = []
+            current_len = 0
+            for w in words:
+                current_segment.append(w)
+                current_len += len(w) + 1
+                if current_len >= max_chunk_len:
+                    text_segments.append(" ".join(current_segment))
+                    current_segment = []
+                    current_len = 0
+            if current_segment:
+                text_segments.append(" ".join(current_segment))
+        else:
+            text_segments = [text]
+
         results: list[dict[str, Any]] = []
 
         HF_TYPE_MAP = {
@@ -291,47 +310,56 @@ class NERExtractor:
             "CHEMICAL": "CHEMICAL",
         }
 
-        # Check if the output has doc.ents (spaCy format in test mocks)
-        if hasattr(entities, "ents"):
-            for ent in entities.ents:
-                raw_label = str(ent.label_).upper()
-                mapped_type = SCISPACY_TYPE_MAP.get(raw_label) or HF_TYPE_MAP.get(ent.label_) or HF_TYPE_MAP.get(raw_label)
-                if not mapped_type or mapped_type not in ALLOWED_ENTITY_TYPES:
-                    continue
-                results.append(
-                    {
-                        "text": ent.text,
-                        "entity_type": mapped_type,
-                        "confidence": 0.8,
-                        "raw_id": "",
-                    }
-                )
-        elif isinstance(entities, list):
-            # HuggingFace list of dicts format
-            for ent in entities:
-                if not isinstance(ent, dict):
-                    continue
-                raw_label = ent.get("entity_group") or ent.get("entity") or ""
-                mapped_type = HF_TYPE_MAP.get(raw_label)
-                if not mapped_type or mapped_type not in ALLOWED_ENTITY_TYPES:
-                    continue
+        for segment in text_segments:
+            try:
+                entities = nlp(segment, truncation=True)
+            except Exception as e:
+                logger.warning("NER extraction segment failed: %s", e)
+                continue
 
-                raw_word = str(ent.get("word", "")).strip()
-                # Clean up WordPiece sub-token prefixes (e.g. ##)
-                if raw_word.startswith("##"):
-                    raw_word = raw_word[2:]
-                
-                if not raw_word or len(raw_word) < 2:
-                    continue
+            # Check if the output has doc.ents (spaCy format in test mocks)
+            if hasattr(entities, "ents"):
+                for ent in entities.ents:
+                    raw_label = str(ent.label_).upper()
+                    mapped_type = SCISPACY_TYPE_MAP.get(raw_label) or HF_TYPE_MAP.get(ent.label_) or HF_TYPE_MAP.get(raw_label)
+                    if not mapped_type or mapped_type not in ALLOWED_ENTITY_TYPES:
+                        continue
+                    results.append(
+                        {
+                            "text": ent.text,
+                            "entity_type": mapped_type,
+                            "confidence": 0.8,
+                            "raw_id": "",
+                        }
+                    )
+            elif isinstance(entities, list):
+                # HuggingFace list of dicts format
+                for ent in entities:
+                    if not isinstance(ent, dict):
+                        continue
+                    raw_label = ent.get("entity_group") or ent.get("entity") or ""
+                    mapped_type = HF_TYPE_MAP.get(raw_label)
+                    if not mapped_type or mapped_type not in ALLOWED_ENTITY_TYPES:
+                        continue
 
-                results.append(
-                    {
-                        "text": raw_word,
-                        "entity_type": mapped_type,
-                        "confidence": float(ent.get("score", 0.8)),
-                        "raw_id": "",
-                    }
-                )
+                    raw_word = str(ent.get("word", "")).strip()
+                    # Clean up WordPiece sub-token prefixes (e.g. ##)
+                    if raw_word.startswith("##"):
+                        raw_word = raw_word[2:]
+                    
+                    if not raw_word or len(raw_word) < 2:
+                        continue
+
+                    results.append(
+                        {
+                            "text": raw_word,
+                            "entity_type": mapped_type,
+                            "confidence": float(ent.get("score", 0.85)),
+                            "raw_id": "",
+                        }
+                    )
+
 
         return results
+
 

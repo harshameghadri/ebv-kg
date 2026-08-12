@@ -13,12 +13,17 @@ try:
 except Exception:
     pass
 
-# Force CPU mode for multi-process Pueue workers to prevent CUDA driver context locking
-if os.getenv("USE_GPU", "").lower() not in ("1", "true"):
+# Allow CUDA GPU execution if USE_GPU=true (NVIDIA CUDA MPS handles multi-process hardware queuing)
+if os.getenv("USE_GPU", "").lower() in ("1", "true"):
+    os.environ["CUDA_VISIBLE_DEVICES"] = os.getenv("CUDA_VISIBLE_DEVICES", "0")
+    os.environ["CUDA_MPS_PIPE_DIRECTORY"] = "/tmp/nvidia-mps"
+    os.environ["CUDA_MPS_LOG_DIRECTORY"] = "/tmp/nvidia-mps"
+else:
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 # Prevent multi-process thread thrashing across parallel worker slots
 os.environ["OMP_NUM_THREADS"] = "2"
+
 
 
 os.environ["MKL_NUM_THREADS"] = "2"
