@@ -123,7 +123,13 @@ def render_dashboard(watch=False):
             for tid, query, _ in running_tasks[:20]:
                 log_info = parse_task_log(tid, pueue_bin)
                 q_short = query[:28] + ".." if len(query) > 30 else query
-                prog_str = f"{log_info['processed']}/{log_info['total']} ({log_info['pct']:.0f}%)" if log_info['total'] > 0 else "Scraping..."
+                if log_info['total'] > 0:
+                    prog_str = f"{log_info['processed']}/{log_info['total']} ({log_info['pct']:.0f}%)"
+                elif log_info['processed'] > 0:
+                    prog_str = f"{log_info['processed']} papers"
+                else:
+                    prog_str = "Scraping..."
+
                 print(f" #{tid:<5} | {q_short:<30} | {log_info['step']:<22} | {prog_str:<18}")
                 if log_info["current_file"] != "N/A":
                     print(f"        └─ Current Paper: {log_info['current_file']} {draw_progress_bar(log_info['pct'], width=15)}")
