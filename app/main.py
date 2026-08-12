@@ -1,7 +1,14 @@
 """Main FastAPI application entrypoint for the EBV Knowledge System."""
 
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
+if os.getenv("HF_TOKEN"):
+    os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN").strip()
+
 from fastapi import FastAPI
+
 from fastapi.staticfiles import StaticFiles
 from app.api.routes import router as api_router
 from app.api.hypothesis_routes import router as hypothesis_router

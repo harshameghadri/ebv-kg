@@ -5,8 +5,16 @@ import logging
 import os
 import sys
 
+from dotenv import load_dotenv
+load_dotenv()
+
+# Sanitize HF_TOKEN if present
+if os.getenv("HF_TOKEN"):
+    os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN").strip()
+
 # Ensure instant unbuffered log flushing for real-time monitoring
 os.environ["PYTHONUNBUFFERED"] = "1"
+
 try:
     sys.stdout.reconfigure(line_buffering=True)
     sys.stderr.reconfigure(line_buffering=True)
