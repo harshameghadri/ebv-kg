@@ -14,9 +14,9 @@ os.environ["NUMEXPR_NUM_THREADS"] = "2"
 try:
     import torch
     torch.set_num_threads(2)
-    torch.set_num_interop_threads(1)
 except Exception:
     pass
+
 
 import psycopg
 
