@@ -13,10 +13,15 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Register API routes
+# Register API routes (both with /api prefix and root for direct endpoints)
 app.include_router(api_router, prefix="/api")
 app.include_router(hypothesis_router, prefix="/api")
 app.include_router(health_router, prefix="/api")
+
+app.include_router(api_router)
+app.include_router(hypothesis_router)
+app.include_router(health_router)
+
 
 # Mount app/static directory at root / to serve the frontend dashboard
 static_dir = os.path.join(os.path.dirname(__file__), "static")

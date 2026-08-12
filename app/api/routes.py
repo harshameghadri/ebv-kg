@@ -111,7 +111,10 @@ def get_neo4j_client() -> Neo4jClient:
 # --- Routes ---
 
 @router.post("/query/hybrid", response_model=RagResponse)
+@router.post("/v1/search", response_model=RagResponse)
+@router.post("/search", response_model=RagResponse)
 @router.post("/api/v1/search", response_model=RagResponse)
+
 async def query_hybrid(
     req: QueryRequest,
     hybrid_retriever: HybridRetriever = Depends(get_hybrid_retriever),
