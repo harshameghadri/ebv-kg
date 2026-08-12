@@ -30,7 +30,7 @@ def parse_task_log(task_id, pueue_bin):
     """Parse log for a running task to extract step, query, and paper progress."""
     try:
         res = subprocess.check_output(
-            [pueue_bin, "log", str(task_id)], stderr=subprocess.DEVNULL
+            [pueue_bin, "log", str(task_id), "-n", "250"], stderr=subprocess.DEVNULL
         ).decode("utf-8", errors="ignore")
     except Exception:
         return {"step": "Starting", "processed": 0, "total": 0, "current_file": "N/A", "pct": 0.0}
@@ -48,12 +48,12 @@ def parse_task_log(task_id, pueue_bin):
     last_file = xml_files[-1] if xml_files else (pdf_files[-1] if pdf_files else "N/A")
 
     # Detect Step
-    step = "Initialization"
+    step = "PubMed Scraping"
     if "Step 4: Materialize to Neo4j" in res:
         step = "Neo4j Materialization"
     elif "Step 3: Index Chunks to LanceDB" in res:
         step = "LanceDB Vector Indexing"
-    elif "Step 2: Parse and Map Documents" in res:
+    elif "Step 2: Parse and Map Documents" in res or xml_files or pdf_files:
         step = "NER & Entity Mapping"
     elif "Step 1: Scraper initialization" in res:
         step = "PubMed Scraping"
@@ -66,6 +66,7 @@ def parse_task_log(task_id, pueue_bin):
         "current_file": last_file,
         "pct": min(pct, 100.0),
     }
+
 
 
 def draw_progress_bar(pct, width=25):
