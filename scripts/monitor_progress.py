@@ -163,8 +163,11 @@ def render_dashboard(watch=False):
 def main():
     parser = argparse.ArgumentParser(description="EBV KG Ingestion Queue Monitor")
     parser.add_argument("--watch", "-w", action="store_true", help="Continuously poll and update dashboard")
+    parser.add_argument("--once", action="store_true", help="Display single snapshot and exit")
     args = parser.parse_args()
-    render_dashboard(watch=args.watch)
+    watch_mode = args.watch and not args.once
+    render_dashboard(watch=watch_mode)
+
 
 
 if __name__ == "__main__":
