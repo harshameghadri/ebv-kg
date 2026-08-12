@@ -312,10 +312,11 @@ class NERExtractor:
 
         for segment in text_segments:
             try:
-                entities = nlp(segment, truncation=True)
+                entities = nlp(segment)
             except Exception as e:
                 logger.warning("NER extraction segment failed: %s", e)
                 continue
+
 
             # Check if the output has doc.ents (spaCy format in test mocks)
             if hasattr(entities, "ents"):
