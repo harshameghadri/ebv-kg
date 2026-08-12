@@ -8,13 +8,10 @@ Rules for your response:
 2. Cite all claims using numeric citations [1], [2], etc., matching the provided document chunks or graph edges.
 3. If the retrieved context describes specific pathways, mechanisms, or entity linkages (e.g. viral gene regulation of host chromatin or disease markers), synthesize the full multi-hop pathway clearly.
 4. Format your output strictly as a JSON object with keys "answer", "confidence", and "citations".
-"""
-
 
 Example format:
 {
-  "answer": "Epstein-Barr virus (EBV) infects B cells [1]. It is also associated \
-with Burkitt lymphoma [2].",
+  "answer": "Epstein-Barr virus (EBV) infects B cells [1]. It is also associated with Burkitt lymphoma [2].",
   "confidence": 0.95,
   "citations": [
     {
@@ -22,18 +19,11 @@ with Burkitt lymphoma [2].",
       "id": "chunk-1",
       "pmid": "11111",
       "doi": "10.1000/1"
-    },
-    {
-      "source_index": 2,
-      "id": "chunk-2",
-      "pmid": "22222",
-      "doi": "10.1000/2"
     }
   ]
 }
 
-Only return the JSON object. Do not include any other conversational text or markdown \
-code blocks (like ```json ... ```) outside the JSON structure. Output valid JSON.
+Only return the JSON object. Do not include any other conversational text outside the JSON structure.
 """
 
 USER_PROMPT_TEMPLATE = """Query: {query}
@@ -44,3 +34,4 @@ Retrieved Document Chunks:
 Retrieved Graph Context:
 {graph_context}
 """
+
