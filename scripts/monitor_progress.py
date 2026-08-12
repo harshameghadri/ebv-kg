@@ -100,6 +100,8 @@ def render_dashboard(watch=False):
         running_tasks = []
         queued_tasks = []
         finished_tasks = []
+        seen_queued_queries = set()
+        duplicate_queued_ids = []
 
         for tid, t in sorted(tasks.items(), key=lambda x: int(x[0])):
             status_obj = t.get("status", {})
@@ -110,9 +112,23 @@ def render_dashboard(watch=False):
             if "Running" in status_obj:
                 running_tasks.append((tid, query, t))
             elif "Queued" in status_obj:
-                queued_tasks.append((tid, query, t))
+                if query in seen_queued_queries:
+                    duplicate_queued_ids.append(tid)
+                else:
+                    seen_queued_queries.add(query)
+                    queued_tasks.append((tid, query, t))
             elif "Done" in status_obj:
                 finished_tasks.append((tid, query, t))
+
+        # Auto-purge duplicate queued tasks in background
+        if duplicate_queued_ids:
+            try:
+                for i in range(0, len(duplicate_queued_ids), 200):
+                    batch = duplicate_queued_ids[i:i+200]
+                    subprocess.run([pueue_bin, "remove"] + batch, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+
 
         if watch:
             os.system("clear" if os.name == "posix" and os.getenv("TERM") else "cls" if os.name == "nt" else "")
