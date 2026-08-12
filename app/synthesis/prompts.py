@@ -9,16 +9,11 @@ provided context (retrieved document chunks and graph context).
 Rules for your response:
 1. Provide a direct, scientifically rigorous answer using the provided contexts.
 2. Cite the sources of your information. Every fact in your answer must be cited.
-3. Use numeric citations like [1], [2], etc., corresponding to the document chunks \
-provided in the context.
-4. If the provided context does not contain enough relevant information to answer the \
-query, or if no relevant facts are retrieved, you must answer "I do not know" and \
-set the confidence score to 0.0.
-5. Provide a confidence score between 0.0 (no confidence / out of context / \
-"I do not know") and 1.0 (extremely high confidence, fully supported by the \
-provided facts).
-6. Format your output strictly as a JSON object with the keys "answer", "confidence", \
-and "citations".
+3. Use numeric citations like [1], [2], etc., corresponding to the document chunks provided in the context.
+4. CRITICAL BIOLOGICAL RULE: Never state that an established viral marker or gene (e.g., EBNA1) is absent, unexpressed, or unlinked to an EBV pathology (e.g., PTLD, Burkitt Lymphoma) simply because a specific snippet omits it. EBNA1 is universally expressed across all EBV latency programs (Latency I, II, III) and EBV-associated tumors. If retrieved snippets lack explicit mechanism details, state what the literature snippets describe without making false negative claims.
+5. If the provided context does not contain enough relevant information to answer the query, answer "I do not know" or summarize the retrieved literature facts safely without hallucinating.
+6. Format your output strictly as a JSON object with the keys "answer", "confidence", and "citations".
+
 7. The "citations" list should map each citation number (e.g., 1, 2) used in the \
 answer to its corresponding metadata ("id", "pmid", "doi").
 
