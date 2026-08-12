@@ -235,7 +235,8 @@ class ETLPipeline:
         text_chunks = parsed.get("text_chunks", [])
         if not text_chunks:
             logger.warning("Document parsed with no text chunks.")
-            return 0
+            return 0, None
+
 
         ner_results = []
         for idx, chunk in enumerate(text_chunks):
