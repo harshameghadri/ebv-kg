@@ -5,8 +5,17 @@ import logging
 import os
 import sys
 
+# Ensure instant unbuffered log flushing for real-time monitoring
+os.environ["PYTHONUNBUFFERED"] = "1"
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
 # Prevent multi-process thread thrashing across parallel worker slots
 os.environ["OMP_NUM_THREADS"] = "2"
+
 os.environ["MKL_NUM_THREADS"] = "2"
 os.environ["OPENBLAS_NUM_THREADS"] = "2"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "2"

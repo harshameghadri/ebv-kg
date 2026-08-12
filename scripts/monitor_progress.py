@@ -30,10 +30,11 @@ def parse_task_log(task_id, pueue_bin):
     """Parse log for a running task to extract step, query, and paper progress."""
     try:
         res = subprocess.check_output(
-            [pueue_bin, "log", str(task_id), "-n", "250"], stderr=subprocess.DEVNULL
+            [pueue_bin, "log", str(task_id)], stderr=subprocess.DEVNULL
         ).decode("utf-8", errors="ignore")
     except Exception:
         return {"step": "Starting", "processed": 0, "total": 0, "current_file": "N/A", "pct": 0.0}
+
 
     # Extract Scraper total found
     total_found = 0
