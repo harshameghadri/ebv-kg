@@ -13,8 +13,13 @@ try:
 except Exception:
     pass
 
+# Force CPU mode for multi-process Pueue workers to prevent CUDA driver context locking
+if os.getenv("USE_GPU", "").lower() not in ("1", "true"):
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 # Prevent multi-process thread thrashing across parallel worker slots
 os.environ["OMP_NUM_THREADS"] = "2"
+
 
 os.environ["MKL_NUM_THREADS"] = "2"
 os.environ["OPENBLAS_NUM_THREADS"] = "2"
