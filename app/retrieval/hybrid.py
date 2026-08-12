@@ -123,7 +123,8 @@ class HybridRetriever:
             print(f"Warning: Dense retrieval failed: {e}")
             dense_results = []
 
-        # 2. Sparse Lexical Retrieval (FTS)
+        # 2. Sparse Lexical Retrieval (PostgreSQL FTS + LanceDB FTS)
+        sparse_results = []
         try:
             table = self.vector_client.init_table()
             try:
@@ -132,39 +133,69 @@ class HybridRetriever:
                     .limit(s_limit)
                     .to_list()
                 )
+                for item in fts_results:
+                    sparse_results.append({
+                        "id": item.get("id"),
+                        "document_id": item.get("document_id"),
+                        "chunk_index": item.get("chunk_index"),
+                        "content": item.get("content"),
+                        "pmid": item.get("pmid"),
+                        "doi": item.get("doi"),
+                        "title": item.get("title"),
+                        "score": item.get("_score", 0.5),
+                    })
             except Exception:
-                # Retry after ensuring index exists
-                self._ensure_fts_index()
-                try:
-                    fts_results = (
-                        table.search(query, query_type="fts")
-                        .limit(s_limit)
-                        .to_list()
-                    )
-                except Exception as e2:
-                    print(f"Warning: LanceDB FTS search failed: {e2}")
-                    fts_results = []
+                pass
         except Exception as e:
-            print(f"Warning: FTS query initialization failed: {e}")
-            fts_results = []
+            print(f"Warning: LanceDB FTS query failed: {e}")
 
-        # Format sparse results uniformly
-        sparse_results = []
-        for item in fts_results:
-            sparse_results.append({
-                "id": item.get("id"),
-                "document_id": item.get("document_id"),
-                "chunk_index": item.get("chunk_index"),
-                "content": item.get("content"),
-                "pmid": item.get("pmid"),
-                "doi": item.get("doi"),
-                "title": item.get("title"),
-                "score": (
-                    item.get("_score")
-                    if "_score" in item
-                    else item.get("score", 0.0)
-                ),
-            })
+        # Always augment with direct PostgreSQL keyword matching for high biological specificity
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+            pg_dsn = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DSN")
+            if pg_dsn:
+                with psycopg.connect(pg_dsn, row_factory=dict_row) as conn:
+                    with conn.cursor() as cur:
+                        keywords = [w.strip() for w in query.split() if len(w.strip()) > 2 and w.strip().lower() not in ("and", "the", "for", "with", "from")]
+                        if keywords:
+                            # Primary match: all keywords or key acronyms (e.g. EBNA1)
+                            where_clauses = ["c.content ILIKE %s" for _ in keywords]
+                            and_sql = " AND ".join(where_clauses)
+                            params = [f"%{k}%" for k in keywords] + [s_limit]
+                            
+                            cur.execute(f"""
+                                SELECT c.id, c.document_id, c.chunk_index, c.content, d.pmid, d.doi, d.title
+                                FROM document_chunks c
+                                LEFT JOIN documents d ON c.document_id = d.id
+                                WHERE {and_sql}
+                                LIMIT %s
+                            """, params)
+                            rows = cur.fetchall()
+                            
+                            # Fallback if AND returns few results: OR match
+                            if len(rows) < s_limit // 2:
+                                or_sql = " OR ".join(where_clauses)
+                                params_or = [f"%{k}%" for k in keywords] + [s_limit]
+                                cur.execute(f"""
+                                    SELECT c.id, c.document_id, c.chunk_index, c.content, d.pmid, d.doi, d.title
+                                    FROM document_chunks c
+                                    LEFT JOIN documents d ON c.document_id = d.id
+                                    WHERE {or_sql}
+                                    LIMIT %s
+                                """, params_or)
+                                rows.extend(cur.fetchall())
+                            
+                            seen_ids = {s.get("id") for s in sparse_results}
+                            for r in rows:
+                                rid = str(r.get("id"))
+                                if rid not in seen_ids:
+                                    r["score"] = 0.9
+                                    sparse_results.append(r)
+                                    seen_ids.add(rid)
+        except Exception as pg_err:
+            print(f"Warning: PostgreSQL sparse retrieval failed: {pg_err}")
+
 
         # 3. Candidate Fusion
         if fusion_method.lower() == "rrf":
