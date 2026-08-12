@@ -71,11 +71,19 @@ $PYTHON_BIN $PIPELINE_SCRIPT --query "init" --max-articles 0 --staging-dir $STAG
 
 echo "Queuing ${#QUERIES[@]} search terms in pueue..."
 
+# Enqueue tasks into dedicated dbingest group
+PUEUE_BIN="/storage/harsha_projects/server_environments/bin/pueue"
+
+# Ensure group dbingest exists and has parallel 20 worker limit
+$PUEUE_BIN group add dbingest 2>/dev/null || true
+$PUEUE_BIN parallel 20 -g dbingest 2>/dev/null || true
+
 for QUERY in "${QUERIES[@]}"; do
-    echo "Queuing query: '$QUERY'"
+    echo "Queuing query in dbingest: '$QUERY'"
     
     # Pass --skip-init since all schemas and indices have already been initialized
-    ~/.cargo/bin/pueue add -- "$PYTHON_BIN $PIPELINE_SCRIPT --query \"$QUERY\" --max-articles 1000 --staging-dir $STAGING_DIR --pg-dsn $PG_DSN --neo4j-uri $NEO4J_URI --neo4j-user $NEO4J_USER --neo4j-password $NEO4J_PASS --lancedb-uri $LANCEDB_URI --skip-init"
+    $PUEUE_BIN add -g dbingest -- "$PYTHON_BIN $PIPELINE_SCRIPT --query \"$QUERY\" --max-articles 1000 --staging-dir $STAGING_DIR --pg-dsn $PG_DSN --neo4j-uri $NEO4J_URI --neo4j-user $NEO4J_USER --neo4j-password $NEO4J_PASS --lancedb-uri $LANCEDB_URI --skip-init"
 done
 
-echo "All jobs enqueued successfully in pueue default group with explicit database connections."
+echo "All jobs enqueued successfully in Pueue group 'dbingest'."
+
