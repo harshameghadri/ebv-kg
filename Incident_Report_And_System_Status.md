@@ -69,6 +69,17 @@ During continuous multi-process batch execution on `rinamochana`, several appare
 
 ---
 
+### Incident 6: HuggingFace Console 404 Probes for Optional Model Configs
+* **Symptom**: Task console logs output `HTTP/1.1 404 Not Found` for URLs ending in `processor_config.json`, `video_preprocessor_config.json`, or `additional_chat_templates`.
+* **Root Cause**:
+  * Standard behavior of HuggingFace `transformers` `pipeline('ner', model='d4data/biomedical-ner-all')`. During initialization, HuggingFace's `httpx` issues fallback `HEAD` probes for optional multimodal files (video preprocessors, chat templates).
+  * HuggingFace Hub returns HTTP 404 for missing optional files, which HuggingFace `transformers` catches internally while successfully loading the primary model weights (`config.json` — 200 OK).
+* **Fix/Verification**:
+  * Verified live in Python on `rinamochana`. Model loads 100% cleanly and outputs entity extraction predictions without error.
+
+
+---
+
 ## 2. 📊 Comprehensive System Progress & Database Footprint (As of Aug 13, 2026)
 
 The system has successfully ingested, normalized, and indexed a massive corpus of EBV research literature on `rinamochana`:
