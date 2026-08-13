@@ -1159,9 +1159,13 @@
                 } catch(e) {}
             }
 
-            // Convert numeric citations [1], [2] to styled badges
-            let formattedText = rawAnswer.replace(/\n/g, '<br>')
-                                         .replace(/\[(\d+)\]/g, '<span class="cite-num-tag">[$1]</span>');
+            // Convert Markdown headers, bolding, and newlines to rich HTML
+            let formattedText = rawAnswer
+                .replace(/^### (.*$)/gim, '<h4 style="font-size:0.98rem; font-weight:800; margin:1rem 0 0.4rem 0; color:var(--brand-blue);">$1</h4>')
+                .replace(/^## (.*$)/gim, '<h3 style="font-size:1.1rem; font-weight:800; margin:1.2rem 0 0.5rem 0; color:var(--text-primary);">$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                .replace(/\n/g, '<br>')
+                .replace(/\[(\d+)\]/g, '<span class="cite-num-tag">[$1]</span>');
             
             document.getElementById('answer-text').innerHTML = formattedText;
             document.getElementById('answer-confidence').innerText = `Confidence: ${((data.confidence_score || data.confidence || 0.85) * 100).toFixed(1)}%`;
