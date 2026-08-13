@@ -49,22 +49,6 @@ class EmbeddingsPipeline:
         # Ensure the LanceDB table is initialized
         self.vector_client.init_table()
 
-        # Connect to LanceDB and fetch all currently indexed chunk IDs
-        existing_ids = set()
-        db = self.vector_client.connect()
-        tables = db.list_tables()
-        if not isinstance(tables, list):
-            tables = getattr(tables, "tables", tables)
-
-        if self.vector_client.table_name in tables:
-            try:
-                table = db.open_table(self.vector_client.table_name)
-                arrow_table = table.to_arrow()
-                if "id" in arrow_table.column_names:
-                    existing_ids = {str(x) for x in arrow_table.column("id").to_pylist()}
-            except Exception as e:
-                logger.warning(f"Could not read existing IDs from LanceDB: {e}")
-
         # Fetch document chunks from PostgreSQL (filter by doc_ids if specified for instant execution)
         with conn.cursor(row_factory=dict_row) as cur:
             if doc_ids:
@@ -74,7 +58,7 @@ class EmbeddingsPipeline:
                     "FROM document_chunks c "
                     "JOIN documents d ON c.document_id = d.id "
                     "WHERE c.document_id = ANY(%s)",
-                    (doc_ids,)
+                    (list(doc_ids),)
                 )
             else:
                 cur.execute(
@@ -85,6 +69,36 @@ class EmbeddingsPipeline:
                     "ORDER BY c.id DESC LIMIT 2000"
                 )
             rows = cur.fetchall()
+
+        if not rows:
+            return 0
+
+        # Connect to LanceDB and check existing chunk IDs
+        existing_ids = set()
+        db = self.vector_client.connect()
+        tables = db.list_tables()
+        if not isinstance(tables, list):
+            tables = getattr(tables, "tables", tables)
+
+        if self.vector_client.table_name in tables:
+            try:
+                table = db.open_table(self.vector_client.table_name)
+                if doc_ids:
+                    # Filter existing IDs for candidate chunks only via scoped query
+                    try:
+                        doc_str_list = ", ".join([f"'{str(d)}'" for d in doc_ids])
+                        matched = table.search().where(f"document_id IN ({doc_str_list})").select(["id"]).to_list()
+                        existing_ids = {str(m["id"]) for m in matched if "id" in m}
+                    except Exception:
+                        arrow_table = table.to_arrow()
+                        if "id" in arrow_table.column_names:
+                            existing_ids = {str(x) for x in arrow_table.column("id").to_pylist()}
+                else:
+                    arrow_table = table.to_arrow()
+                    if "id" in arrow_table.column_names:
+                        existing_ids = {str(x) for x in arrow_table.column("id").to_pylist()}
+            except Exception as e:
+                logger.warning(f"Could not read existing IDs from LanceDB: {e}")
 
 
         # Filter for chunks that have not yet been indexed

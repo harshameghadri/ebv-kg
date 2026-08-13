@@ -83,7 +83,7 @@ class NERExtractor:
             return []
 
         import os
-        enable_bern2 = os.getenv("ENABLE_BERN2", "true").lower() in ("1", "true", "yes")
+        enable_bern2 = os.getenv("ENABLE_BERN2", "false").lower() in ("1", "true", "yes")
 
         bern2_err: Exception | None = None
         # 1. Try Bern2 API first unless circuit breaker triggered or disabled via env
@@ -95,18 +95,11 @@ class NERExtractor:
             except Exception as e:
                 bern2_err = e
                 self._bern2_fail_count += 1
-                if self._bern2_fail_count >= 2:
-                    self._bern2_disabled = True
-                    logger.warning(
-                        "Bern2 API failed %d consecutive times. Enabling circuit breaker; routing future chunks directly to SciSpacy.",
-                        self._bern2_fail_count,
-                    )
-                else:
-                    logger.warning(
-                        "Bern2 API extraction failed (%s). Falling back to SciSpacy model '%s'.",
-                        e,
-                        self.spacy_model,
-                    )
+                self._bern2_disabled = True
+                logger.warning(
+                    "Bern2 API extraction failed (%s). Disabling Bern2 and routing future chunks directly to local NER fallback.",
+                    e
+                )
 
         # 2. Local SciSpacy pipeline
         try:

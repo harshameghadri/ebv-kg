@@ -41,7 +41,11 @@ class Materializer:
         self.neo4j_client.clear_graph()
 
     def materialize_graph(
-        self, pg_conn: Any, curation_statuses: list[str] | None = None, limit_latest: int | None = 500
+        self,
+        pg_conn: Any,
+        curation_statuses: list[str] | None = None,
+        limit_latest: int | None = 500,
+        doc_ids: list[Any] | None = None,
     ) -> dict[str, int]:
         """Materializes nodes and edges from PostgreSQL to Neo4j.
 
@@ -49,6 +53,7 @@ class Materializer:
             pg_conn: A psycopg Connection object.
             curation_statuses: If specified, only sync relationships with these statuses.
             limit_latest: If specified, limit relationship sync to the N most recent entries.
+            doc_ids: Optional list of document IDs to specifically target.
 
         Returns:
             A dictionary containing counts of upserted entities, papers, relationships,
@@ -62,32 +67,24 @@ class Materializer:
             "mentions": 0,
         }
 
-        # Query relationships
-        rel_query = """
-            SELECT r.id, r.subject_id, r.object_id, r.predicate, r.confidence_score, r.curation_status,
-                   e1.name AS subject_name, e1.category AS subject_type, e1.canonical_id AS subject_cid,
-                   e2.name AS object_name, e2.category AS object_type, e2.canonical_id AS object_cid
-            FROM relationships r
-            JOIN normalized_entities e1 ON r.subject_id = e1.id
-            JOIN normalized_entities e2 ON r.object_id = e2.id
-        """
-        params = []
-        if curation_statuses:
-            rel_query += " WHERE r.curation_status = ANY(%s)"
-            params.append(curation_statuses)
-        rel_query += " ORDER BY r.id DESC"
-        if limit_latest:
-            rel_query += " LIMIT %s"
-            params.append(limit_latest)
-
-
         # 1. Fetch and upsert Entity nodes
         logger.info("Fetching entities from PostgreSQL...")
         with pg_conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                "SELECT id, canonical_id, name, entity_type, ontology_source, synonyms "
-                "FROM normalized_entities"
-            )
+            if doc_ids:
+                cur.execute(
+                    "SELECT DISTINCT e.id, e.canonical_id, e.name, e.entity_type, e.ontology_source, e.synonyms "
+                    "FROM normalized_entities e "
+                    "JOIN relationships r ON (e.id = r.source_entity_id OR e.id = r.target_entity_id) "
+                    "JOIN relationship_evidence ev ON r.id = ev.relationship_id "
+                    "JOIN document_chunks c ON ev.chunk_id = c.id "
+                    "WHERE c.document_id = ANY(%s)",
+                    (list(doc_ids),)
+                )
+            else:
+                cur.execute(
+                    "SELECT id, canonical_id, name, entity_type, ontology_source, synonyms "
+                    "FROM normalized_entities"
+                )
             entities = cur.fetchall()
 
         if entities:
@@ -115,9 +112,15 @@ class Materializer:
         # 2. Fetch and upsert Paper nodes
         logger.info("Fetching papers from PostgreSQL...")
         with pg_conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                "SELECT id, doi, pmid, title, journal, published_date FROM documents"
-            )
+            if doc_ids:
+                cur.execute(
+                    "SELECT id, doi, pmid, title, journal, published_date FROM documents WHERE id = ANY(%s)",
+                    (list(doc_ids),)
+                )
+            else:
+                cur.execute(
+                    "SELECT id, doi, pmid, title, journal, published_date FROM documents"
+                )
             papers = cur.fetchall()
 
         if papers:
@@ -172,14 +175,25 @@ class Materializer:
             "LEFT JOIN documents d ON c.document_id = d.id "
         )
         rel_params = []
+        where_clauses = []
         if curation_statuses is not None:
-            rel_query += " WHERE r.curation_status = ANY(%s)"
+            where_clauses.append("r.curation_status = ANY(%s)")
             rel_params.append(list(curation_statuses))
+        if doc_ids:
+            where_clauses.append("c.document_id = ANY(%s)")
+            rel_params.append(list(doc_ids))
+
+        if where_clauses:
+            rel_query += " WHERE " + " AND ".join(where_clauses)
 
         rel_query += (
             " GROUP BY r.id, r.relationship_type, r.confidence_score, r.curation_status, "
-            "r.source_type, src.canonical_id, tgt.canonical_id"
+            "r.source_type, src.canonical_id, tgt.canonical_id "
+            "ORDER BY r.id DESC"
         )
+        if limit_latest and not doc_ids:
+            rel_query += " LIMIT %s"
+            rel_params.append(limit_latest)
 
         with pg_conn.cursor(row_factory=dict_row) as cur:
             cur.execute(rel_query, rel_params)
@@ -207,7 +221,6 @@ class Materializer:
                 }
                 edges_by_type[row["relationship_type"]].append(edge_dict)
 
-
             total_edges = 0
             for rel_type, edges in edges_by_type.items():
                 logger.info(f"Upserting {len(edges)} '{rel_type}' edges with rich properties to Neo4j...")
@@ -221,7 +234,6 @@ class Materializer:
                 )
                 total_edges += upserted
             stats["relationships"] = total_edges
-
 
         # 4. Draw 'MENTIONS' edges between Paper and Entity nodes
         logger.info("Fetching entity evidence mentions from PostgreSQL...")
@@ -238,9 +250,16 @@ class Materializer:
             "  (ent.id = r.source_entity_id OR ent.id = r.target_entity_id)"
         )
         mentions_params = []
+        where_clauses = []
         if curation_statuses is not None:
-            mentions_query += " WHERE r.curation_status = ANY(%s)"
+            where_clauses.append("r.curation_status = ANY(%s)")
             mentions_params.append(list(curation_statuses))
+        if doc_ids:
+            where_clauses.append("d.id = ANY(%s)")
+            mentions_params.append(list(doc_ids))
+
+        if where_clauses:
+            mentions_query += " WHERE " + " AND ".join(where_clauses)
 
         mentions_query += " GROUP BY d.doi, ent.canonical_id"
 

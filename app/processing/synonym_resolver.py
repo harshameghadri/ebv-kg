@@ -59,12 +59,13 @@ class SynonymResolver:
         ols_timeout: float = 5.0,
         fuzzy_threshold: float = 0.8,
     ):
-        ols_env = os.getenv("ENABLE_OLS", "").lower()
-        if ols_env in ("false", "0", "no") and ols_enabled is True:
-            # If ENABLE_OLS=false is in env, default ols_enabled to false unless explicitly forced in tests
-            self.ols_enabled = False if os.environ.get("ENABLE_OLS") == "false" and "PYTEST_CURRENT_TEST" not in os.environ else ols_enabled
+        ols_env = os.getenv("ENABLE_OLS", "false").lower()
+        if ols_env in ("true", "1", "yes"):
+            self.ols_enabled = True
+        elif "PYTEST_CURRENT_TEST" in os.environ and ols_enabled:
+            self.ols_enabled = True
         else:
-            self.ols_enabled = ols_enabled
+            self.ols_enabled = False
         self.ols_timeout = 1.5 if ols_timeout == 5.0 else ols_timeout
 
         self.fuzzy_threshold = fuzzy_threshold

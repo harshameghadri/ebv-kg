@@ -65,6 +65,9 @@ NEO4J_USER="neo4j"
 NEO4J_PASS="neo4jpassword"
 LANCEDB_URI="/storage/harsha_projects/ebv_KG/data/lancedb/"
 
+export ENABLE_BERN2=false
+export ENABLE_OLS=false
+
 # Initialize the database schemas and indices synchronously before enqueuing to prevent parallel initialization race conditions
 echo "Initializing database schemas and search indices..."
 $PYTHON_BIN $PIPELINE_SCRIPT --query "init" --max-articles 0 --staging-dir $STAGING_DIR --pg-dsn $PG_DSN --neo4j-uri $NEO4J_URI --neo4j-user $NEO4J_USER --neo4j-password $NEO4J_PASS --lancedb-uri $LANCEDB_URI

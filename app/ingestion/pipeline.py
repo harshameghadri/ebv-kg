@@ -85,26 +85,27 @@ class ETLPipeline:
 
 
         try:
-            # Collect unique absolute file paths to process
-            xml_paths = set(Path(p).resolve() for p in scraper_res.get("xml_saved", []))
-            xml_dir = self.staging_dir / "xml"
-            if xml_dir.exists():
-                for p in xml_dir.glob("*.xml"):
-                    xml_paths.add(p.resolve())
+            # Collect unique absolute file paths saved by scraper
+            xml_paths = set(Path(p).resolve() for p in scraper_res.get("xml_saved", []) if Path(p).exists())
+            pdf_paths = set(Path(p).resolve() for p in scraper_res.get("pdf_saved", []) if Path(p).exists())
+            metadata_paths = set(Path(p).resolve() for p in scraper_res.get("metadata_saved", []) if Path(p).exists())
 
-            pdf_paths = set()
-            pdf_dir = self.staging_dir / "pdf"
-            if pdf_dir.exists():
-                for p in pdf_dir.glob("*.pdf"):
-                    pdf_paths.add(p.resolve())
-            for p in self.staging_dir.glob("*.pdf"):
-                pdf_paths.add(p.resolve())
+            # Fallback for standalone/direct invocations without scraper results
+            if not xml_paths and not pdf_paths and not metadata_paths:
+                xml_dir = self.staging_dir / "xml"
+                if xml_dir.exists():
+                    for p in xml_dir.glob("*.xml"):
+                        xml_paths.add(p.resolve())
 
-            metadata_paths = set(Path(p).resolve() for p in scraper_res.get("metadata_saved", []))
-            metadata_dir = self.staging_dir / "metadata"
-            if metadata_dir.exists():
-                for p in metadata_dir.glob("*.json"):
-                    metadata_paths.add(p.resolve())
+                pdf_dir = self.staging_dir / "pdf"
+                if pdf_dir.exists():
+                    for p in pdf_dir.glob("*.pdf"):
+                        pdf_paths.add(p.resolve())
+
+                metadata_dir = self.staging_dir / "metadata"
+                if metadata_dir.exists():
+                    for p in metadata_dir.glob("*.json"):
+                        metadata_paths.add(p.resolve())
 
             # Parse XML files
             for xml_path in xml_paths:
@@ -205,10 +206,11 @@ class ETLPipeline:
                 database=self.neo4j_database
             )
             materializer = Materializer(neo4j_client=neo4j_client)
-            # Sync approved/pending relationships (curation_statuses=None syncs all)
+            # Sync approved/pending relationships for current batch documents (or latest 500)
             materialized_stats = materializer.materialize_graph(
                 pg_conn=pg_conn_neo4j,
-                curation_statuses=["APPROVED", "PENDING"]
+                curation_statuses=["APPROVED", "PENDING"],
+                doc_ids=processed_doc_ids if processed_doc_ids else None
             )
         finally:
             if neo4j_client:
