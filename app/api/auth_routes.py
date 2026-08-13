@@ -19,9 +19,7 @@ router = APIRouter()
 # --- Helpers ---
 
 def get_pg_conn():
-    pg_dsn = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DSN")
-    if not pg_dsn:
-        raise ValueError("DATABASE_URL or POSTGRES_DSN environment variable must be set.")
+    pg_dsn = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DSN") or "postgresql://postgres:postgrespassword@localhost:5432/ebv_rag"
     conn = psycopg.connect(pg_dsn)
     try:
         yield conn
