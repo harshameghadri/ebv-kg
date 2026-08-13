@@ -464,6 +464,13 @@ async def curation_pending(
     user_id = user.get("id") if user else None
 
     query = """
+    WITH pending_rels AS (
+        SELECT id, source_entity_id, target_entity_id, relationship_type, confidence_score
+        FROM relationships
+        WHERE curation_status = 'PENDING'
+        ORDER BY confidence_score DESC
+        LIMIT %s
+    )
     SELECT 
         r.id AS relationship_id,
         src.canonical_id AS source_canonical_id,
@@ -478,20 +485,18 @@ async def curation_pending(
         COUNT(CASE WHEN cv.vote = 'APPROVE' THEN 1 END) AS approvals_count,
         COUNT(CASE WHEN cv.vote = 'REJECT' THEN 1 END) AS rejections_count,
         MAX(CASE WHEN cv.user_id = %s THEN cv.vote END) AS user_vote
-    FROM relationships r
+    FROM pending_rels r
     JOIN normalized_entities src ON r.source_entity_id = src.id
     JOIN normalized_entities tgt ON r.target_entity_id = tgt.id
     LEFT JOIN relationship_evidence re ON r.id = re.relationship_id
     LEFT JOIN curation_votes cv ON r.id = cv.relationship_id
-    WHERE r.curation_status = 'PENDING'
     GROUP BY r.id, src.canonical_id, src.name, src.entity_type, tgt.canonical_id, tgt.name, tgt.entity_type, r.relationship_type, r.confidence_score
     ORDER BY r.confidence_score DESC
-    LIMIT %s
     """
     try:
         with conn.cursor(row_factory=dict_row) as cur:
             user_uuid = UUID(user_id) if user_id else None
-            cur.execute(query, (user_uuid, limit))
+            cur.execute(query, (limit, user_uuid))
             rows = cur.fetchall()
     except Exception as e:
         logger.error("Failed to query pending relationships: %s", e)
