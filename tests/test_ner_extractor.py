@@ -23,7 +23,8 @@ def test_bern2_url_formatting():
 
 
 @patch("requests.post")
-def test_extract_bern2_success(mock_post):
+def test_extract_bern2_success(mock_post, monkeypatch):
+    monkeypatch.setenv("ENABLE_BERN2", "true")
     text = "EBNA-1 expression in LCLs causes lymphoma when treated with cisplatin."
 
     mock_response = MagicMock()
@@ -98,7 +99,8 @@ def test_extract_bern2_success(mock_post):
 
 @patch("requests.post")
 @patch("time.sleep")
-def test_extract_bern2_retry_success(mock_sleep, mock_post):
+def test_extract_bern2_retry_success(mock_sleep, mock_post, monkeypatch):
+    monkeypatch.setenv("ENABLE_BERN2", "true")
     text = "EBNA-1 causes lymphoma."
 
     mock_resp_429 = MagicMock()

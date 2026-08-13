@@ -142,10 +142,11 @@ def test_run_etl_pipeline_success(
     mock_embeddings.index_pending_chunks.assert_called_once()
 
     # Verify Materializer call
-    mock_materializer.materialize_graph.assert_called_once_with(
-        pg_conn=mock_conn,
-        curation_statuses=["APPROVED", "PENDING"]
-    )
+    mock_materializer.materialize_graph.assert_called_once()
+    called_kwargs = mock_materializer.materialize_graph.call_args.kwargs
+    assert called_kwargs["pg_conn"] == mock_conn
+    assert called_kwargs["curation_statuses"] == ["APPROVED", "PENDING"]
+    assert "doc_ids" in called_kwargs
 
 
 @patch("app.ingestion.pipeline.psycopg.connect")

@@ -283,7 +283,7 @@ def test_materialize_graph_with_curation_statuses(mock_neo4j_client):
     # Verify relationships query has WHERE clause and params
     rel_query, rel_params = cursor.execute_calls[2]
     assert "WHERE r.curation_status = ANY(%s)" in rel_query
-    assert rel_params == [["APPROVED"]]
+    assert rel_params[0] == ["APPROVED"]
 
     # Verify mentions query has WHERE clause and params
     mentions_query, mentions_params = cursor.execute_calls[3]
