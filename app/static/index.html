@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="bright">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,11 +32,33 @@
             --accent-purple: #6D28D9;
             --accent-pink: #BE185D;
             --accent-amber: #D97706;
+            --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        [data-theme="dark"] {
+            --bg-page: #0B0F17;
+            --bg-surface: #1E293B;
+            --border-subtle: #334155;
+            --border-strong: #475569;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --brand-navy: #020617;
+            --brand-blue: #3B82F6;
+            --brand-blue-hover: #60A5FA;
+            --brand-blue-light: #1E293B;
+            --accent-emerald: #10B981;
+            --accent-emerald-bg: #064E3B;
+            --accent-cyan: #38BDF8;
+            --accent-purple: #A855F7;
+            --accent-pink: #F43F5E;
+            --accent-amber: #F59E0B;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
         body {
             background-color: var(--bg-page);
             color: var(--text-primary);
@@ -48,7 +70,7 @@
             flex-direction: column;
         }
 
-        /* --- Top Bar (Open Targets / EBI Header Style) --- */
+        /* --- Top Bar --- */
         .top-bar {
             background: var(--brand-navy);
             color: #FFFFFF;
@@ -56,7 +78,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #1E293B;
+            border-bottom: 1px solid var(--border-subtle);
             flex-wrap: wrap;
             gap: 1rem;
         }
@@ -85,6 +107,7 @@
             gap: 1.25rem;
             font-size: 0.8rem;
             color: #94A3B8;
+            align-items: center;
             flex-wrap: wrap;
         }
 
@@ -101,6 +124,43 @@
             border-radius: 50%;
             background-color: #34D399;
             margin-right: 4px;
+        }
+
+        /* Theme Selector & Auth Header Controls */
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-select {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            padding: 0.35rem 0.6rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .btn-auth {
+            background: var(--brand-blue);
+            color: #FFFFFF;
+            border: none;
+            padding: 0.4rem 0.9rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-auth:hover {
+            background: var(--brand-blue-hover);
         }
 
         /* --- Search Header & Tab Navigation --- */
@@ -150,567 +210,455 @@
             gap: 0.75rem;
             max-width: 1600px;
             margin: 0 auto;
+            position: relative;
         }
 
         .search-input {
             flex: 1;
-            background: var(--bg-page);
-            border: 1px solid var(--border-strong);
-            border-radius: 6px;
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+            font-family: var(--font-sans);
+            border: 2px solid var(--border-strong);
+            border-radius: 8px;
+            background: var(--bg-surface);
             color: var(--text-primary);
-            font-family: inherit;
+            outline: none;
         }
 
         .search-input:focus {
-            outline: none;
             border-color: var(--brand-blue);
-            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
         }
 
         .btn-search {
             background: var(--brand-blue);
             color: #FFFFFF;
             border: none;
-            border-radius: 6px;
-            padding: 0 1.5rem;
+            border-radius: 8px;
+            padding: 0.75rem 1.75rem;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
 
-        .btn-search:hover {
-            background: var(--brand-blue-hover);
-        }
+        .btn-search:hover { background: var(--brand-blue-hover); }
 
-        .preset-prompts {
+        .search-controls {
             display: flex;
-            gap: 0.5rem;
+            gap: 1.5rem;
             max-width: 1600px;
             margin: 0.75rem auto 0 auto;
-            flex-wrap: wrap;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
             align-items: center;
         }
 
-        .prompt-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .prompt-btn {
-            background: var(--bg-page);
+        .control-select {
+            background: var(--bg-surface);
+            color: var(--text-primary);
             border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-            padding: 0.3rem 0.7rem;
             border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
         }
 
-        .prompt-btn:hover {
-            border-color: var(--brand-blue);
-            color: var(--brand-blue);
-            background: var(--brand-blue-light);
-        }
-
-        /* --- Workspace Layout & Panels --- */
-        .workspace {
+        /* --- Main Layout Grid --- */
+        .main-content {
             max-width: 1600px;
             margin: 1.5rem auto;
             padding: 0 2rem;
-            width: 100%;
             flex: 1;
+            width: 100%;
         }
 
-        .panel {
-            display: none;
-        }
+        .panel { display: none; }
+        .panel.active { display: block; }
 
-        .panel.active {
-            display: block;
-        }
-
-        /* 3-Column Search Grid */
-        .search-grid {
+        .dashboard-grid {
             display: grid;
-            grid-template-columns: 260px 1fr 440px;
-            gap: 1.25rem;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
         }
 
-        @media (max-width: 1280px) {
-            .search-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-            .filter-card { grid-column: 1 / -1; }
-        }
-
-        @media (max-width: 768px) {
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Cards */
         .card {
             background: var(--bg-surface);
             border: 1px solid var(--border-subtle);
             border-radius: 8px;
             padding: 1.25rem;
+            box-shadow: var(--card-shadow);
         }
 
         .card-header {
+            font-size: 1rem;
             font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--brand-navy);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
             margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-subtle);
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        /* Faceted Filters */
-        .filter-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .filter-group label {
-            display: block;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.4rem;
-        }
-
-        .filter-select, .filter-input {
-            width: 100%;
-            background: var(--bg-page);
-            border: 1px solid var(--border-subtle);
-            padding: 0.45rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
             color: var(--text-primary);
-            font-family: var(--font-sans);
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0.5rem;
         }
 
-        .checkbox-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        /* Synthesized Evidence Card */
-        .confidence-chip {
-            background: var(--accent-emerald-bg);
-            color: var(--accent-emerald);
-            border: 1px solid #A7F3D0;
-            padding: 0.2rem 0.6rem;
+        .entity-tag {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
             border-radius: 4px;
             font-size: 0.75rem;
             font-weight: 700;
             font-family: var(--font-mono);
-        }
-
-        .summary-body {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.65;
-            margin-bottom: 1.25rem;
-            white-space: pre-line;
-        }
-
-        /* Structured Triples Table */
-        .triples-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-        }
-
-        .triples-table th, .triples-table td {
-            padding: 0.6rem 0.8rem;
-            border: 1px solid var(--border-subtle);
-            text-align: left;
-        }
-
-        .triples-table th {
-            background: var(--bg-page);
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        .entity-tag {
-            font-family: var(--font-mono);
-            font-weight: 600;
-            padding: 0.15rem 0.4rem;
-            border-radius: 3px;
-            font-size: 0.8rem;
-        }
-
-        .tag-gene { background: #E0F2FE; color: #0369A1; }
-        .tag-viral { background: #F3E8FF; color: #7E22CE; }
-        .tag-disease { background: #FCE7F3; color: #BE185D; }
-        .tag-cell { background: #D1FAE5; color: #047857; }
-        .tag-compound { background: #FEF3C7; color: #B45309; }
-
-        .citations-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .citation-item {
-            background: var(--bg-page);
-            border: 1px solid var(--border-subtle);
-            padding: 0.6rem 0.8rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
-        }
-
-        .citation-item a {
-            color: var(--brand-blue);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .citation-item a:hover { text-decoration: underline; }
-
-        /* Network Visualizer & Node Inspector */
-        #cy {
-            width: 100%;
-            height: 380px;
-            background: #F1F5F9;
-            border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-        }
-
-        .graph-toolbar {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-
-        .tool-btn {
-            background: var(--bg-page);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
             cursor: pointer;
-            font-weight: 500;
         }
+        .entity-tag:hover { opacity: 0.85; text-decoration: underline; }
 
-        .tool-btn:hover {
-            color: var(--brand-blue);
-            border-color: var(--brand-blue);
-        }
+        .tag-viral { background: #F3E8FF; color: #6B21A8; }
+        .tag-gene { background: #E0F2FE; color: #0369A1; }
+        .tag-disease { background: #FCE7F3; color: #9D174D; }
+        .tag-cell { background: #D1FAE5; color: #065F46; }
 
-        .inspector-panel {
-            background: var(--bg-page);
-            border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-            padding: 1rem;
-            margin-top: 1rem;
-            display: none;
-        }
+        [data-theme="dark"] .tag-viral { background: #581C87; color: #F3E8FF; }
+        [data-theme="dark"] .tag-gene { background: #075985; color: #E0F2FE; }
+        [data-theme="dark"] .tag-disease { background: #831843; color: #FCE7F3; }
+        [data-theme="dark"] .tag-cell { background: #064E3B; color: #D1FAE5; }
 
-        .inspector-title {
-            font-weight: 700;
-            color: var(--brand-navy);
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
-        }
-
-        /* Cross-Silo Hypothesis Overlap Panel */
-        .hypothesis-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.25rem;
-            margin-top: 1.25rem;
-        }
-
-        /* Human Curation Table */
+        /* Triples & Curation Table */
         .curation-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
-            margin-top: 1rem;
-            background: var(--bg-surface);
         }
 
         .curation-table th, .curation-table td {
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border-subtle);
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--border-subtle);
             text-align: left;
         }
 
         .curation-table th {
             background: var(--bg-page);
-            font-weight: 700;
             color: var(--text-secondary);
+            font-weight: 700;
         }
 
-        .btn-approve {
-            background: #ECFDF5;
-            color: #047857;
-            border: 1px solid #A7F3D0;
-            padding: 0.3rem 0.7rem;
+        .btn-vote {
+            padding: 0.3rem 0.6rem;
             border-radius: 4px;
-            font-weight: 600;
+            border: 1px solid var(--border-strong);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            font-weight: 700;
             cursor: pointer;
-            margin-right: 0.3rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .btn-vote:hover { background: var(--brand-blue-light); border-color: var(--brand-blue); }
+        .btn-vote.active-approve { background: var(--accent-emerald-bg); color: var(--accent-emerald); border-color: var(--accent-emerald); }
+        .btn-vote.active-reject { background: #FEE2E2; color: #B91C1C; border-color: #B91C1C; }
+
+        .vote-tally {
+            font-size: 0.75rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
         }
 
-        .btn-reject {
-            background: #FDF2F8;
-            color: #BE185D;
-            border: 1px solid #FBCFE8;
-            padding: 0.3rem 0.7rem;
-            border-radius: 4px;
-            font-weight: 600;
-            cursor: pointer;
+        /* --- Graph Canvas --- */
+        #cy, #cy-explorer {
+            width: 100%;
+            height: 480px;
+            background: var(--bg-page);
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
         }
 
-        .btn-approve:hover { background: #047857; color: #FFF; }
-        .btn-reject:hover { background: #BE185D; color: #FFF; }
+        /* Inspector Drawer */
+        .inspector-panel {
+            margin-top: 1rem;
+            background: var(--bg-page);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            display: none;
+        }
 
+        /* Citations list */
+        .citation-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.85rem;
+        }
+        .citation-item a { color: var(--brand-blue); text-decoration: none; font-weight: 600; }
+        .citation-item a:hover { text-decoration: underline; }
+
+        /* Loader Spinner */
         .loading-spinner {
             display: none;
-            margin: 2rem auto;
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border: 3px solid var(--border-subtle);
+            border-top: 3px solid var(--brand-blue);
             border-radius: 50%;
-            border-top-color: var(--brand-blue);
             animation: spin 0.8s linear infinite;
+            margin: 2rem auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Modal Styling --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
         }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .modal-card {
+            background: var(--bg-surface);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .modal-header {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-form-group {
+            margin-bottom: 1rem;
+        }
+
+        .modal-form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            background: var(--bg-surface);
+            color: var(--text-primary);
+        }
+
+        .btn-modal-submit {
+            width: 100%;
+            padding: 0.7rem;
+            background: var(--brand-blue);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        .demo-creds-box {
+            background: var(--bg-page);
+            border: 1px dashed var(--border-strong);
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
 
-    <!-- Top Bar (Open Targets / EBI Style) -->
+    <!-- TOP BAR -->
     <div class="top-bar">
         <div class="brand-section">
-            EBV KNOWLEDGE SYSTEM
-            <span class="brand-badge">Open Targets Model</span>
+            🧬 EBV Knowledge System <span class="brand-badge">SPOKE-GraphRAG v2.0</span>
         </div>
         <div class="sys-telemetry">
-            <div class="telemetry-item">PMC Papers: <span id="tele-docs">13,043</span></div>
-            <div class="telemetry-item">Vector Chunks: <span id="tele-chunks">231,949</span></div>
-            <div class="telemetry-item">Neo4j Edges: <span id="tele-edges">1,868</span></div>
-            <div class="telemetry-item"><span class="status-dot"></span>PostgreSQL / LanceDB: <span>Online</span></div>
+            <div class="telemetry-item"><span class="status-dot"></span>Host: <span>rinamochana (100.80.27.49)</span></div>
+            <div class="telemetry-item">Papers: <span id="tele-docs">13,301</span></div>
+            <div class="telemetry-item">Chunks: <span id="tele-chunks">237,725</span></div>
+            <div class="telemetry-item">Entities: <span id="tele-entities">451,632</span></div>
+            <div class="telemetry-item">Edges: <span id="tele-edges">30.0M</span></div>
+        </div>
+        <div class="header-controls">
+            <!-- Dark Mode Switcher -->
+            <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
+                <option value="bright">☀️ Bright (Light)</option>
+                <option value="dark">🌙 Dark Mode</option>
+                <option value="system">💻 System Theme</option>
+            </select>
+            <!-- Auth Login / Logout Button -->
+            <div id="auth-header-area">
+                <button class="btn-auth" onclick="openAuthModal()">🔑 Sign In / Curator</button>
+            </div>
         </div>
     </div>
 
-    <!-- Search Header & Tab Navigation -->
+    <!-- SEARCH & NAVIGATION HEADER -->
     <div class="search-container">
-        
         <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('search', event)">🔍 Evidence Search</button>
-            <button class="tab-btn" onclick="switchTab('hypothesis', event)">💡 Cross-Silo Hypothesis</button>
+            <button class="tab-btn active" onclick="switchTab('hybrid', event)">🔍 Hybrid GraphRAG Search</button>
+            <button class="tab-btn" onclick="switchTab('hypo', event)">💡 Cross-Silo Hypotheses</button>
             <button class="tab-btn" onclick="switchTab('explorer', event)">🌐 Graph Explorer</button>
             <button class="tab-btn" onclick="switchTab('curation', event)">⚖️ Human Curation</button>
         </div>
 
-        <div class="search-box-row" style="position: relative;">
-            <input type="text" id="query-input" class="search-input" value="EBNA1 binding to oriP DNA replication origin" placeholder="Search biomedical targets, pathways, viral genes, or disease outcomes..." oninput="handleAutocomplete(this.value)" autocomplete="off">
-            <button class="btn-search" onclick="runGraphRAG()">Search Evidence</button>
-            <div id="autocomplete-list" style="position: absolute; top: 100%; left: 0; right: 180px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 0 0 6px 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 999; display: none;"></div>
+        <div class="search-box-row">
+            <input type="text" id="query-input" class="search-input" placeholder="Ask EBV biological questions (e.g. How does EBNA1 bind oriP to initiate replication?)" oninput="handleAutocomplete(this.value)" autocomplete="off">
+            <button class="btn-search" onclick="runGraphRAG()">Search Knowledge Base</button>
+            <!-- Autocomplete suggestions dropdown -->
+            <div id="autocomplete-list" style="display:none; position:absolute; top: 100%; left:0; right: 140px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 6px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 100;"></div>
         </div>
 
-        <div class="preset-prompts">
-            <span class="prompt-label">Quick Queries:</span>
-            <button class="prompt-btn" onclick="setQuery('EBNA1 binding to oriP DNA replication origin')">EBNA1 ➔ oriP Replication</button>
-            <button class="prompt-btn" onclick="setQuery('EBNA1 expression in Post-Transplant Lymphoproliferative Disorder (PTLD)')">EBNA1 ➔ PTLD Expression</button>
-            <button class="prompt-btn" onclick="setQuery('What is the molecular mimicry mechanism between EBNA1 and GlialCAM in Multiple Sclerosis?')">EBNA1 ➔ GlialCAM Cross-Reactivity</button>
-            <button class="prompt-btn" onclick="setQuery('LMP1 activation of NF-kB signaling pathway in Burkitt Lymphoma')">LMP1 ➔ NF-kB Signaling</button>
-        </div>
-
-            <button class="prompt-btn" onclick="setQuery('How does LMP1 activate NF-kB signaling and evade apoptosis in Burkitt Lymphoma?')">LMP1 ➔ NF-kB Signalling</button>
-            <button class="prompt-btn" onclick="setQuery('Which metabolic enzymes (SCD1) are targeted by Withaferin A in EBV-transformed B cells?')">Withaferin A ➔ SCD1 Downregulation</button>
-            <button class="prompt-btn" onclick="setQuery('What are the single-cell marker genes for atypical memory B cells in PTLD?')">Atypical B Cells in PTLD</button>
+        <div class="search-controls">
+            <div>Mode: <b>Dense Vector + Neo4j Subgraph Pruning</b></div>
+            <div>Max Hops: 
+                <select id="hop-select" class="control-select">
+                    <option value="1">1 Hop</option>
+                    <option value="2" selected>2 Hops</option>
+                    <option value="3">3 Hops</option>
+                </select>
+            </div>
+            <div>Min Edge Confidence: 
+                <select id="conf-select" class="control-select">
+                    <option value="0.70">0.70 (High)</option>
+                    <option value="0.80" selected>0.80 (Strict)</option>
+                    <option value="0.90">0.90 (Gold Standard)</option>
+                </select>
+            </div>
         </div>
     </div>
 
-    <!-- Main Workspace -->
-    <div class="workspace">
-
-        <!-- PANEL 1: EVIDENCE SEARCH GRID -->
-        <div id="search-panel" class="panel active">
+    <!-- MAIN DASHBOARD CONTENT -->
+    <div class="main-content">
+        
+        <!-- PANEL 1: HYBRID RAG SEARCH -->
+        <div id="hybrid-panel" class="panel active">
+            <div id="search-loader" class="loading-spinner"></div>
             
-            <div class="search-grid">
-                
-                <!-- Left: Faceted Filter Drawer -->
-                <div class="card filter-card">
-                    <div class="card-header">Evidence Filters</div>
-
-                    <div class="filter-group">
-                        <label for="conf-select">Min Edge Confidence</label>
-                        <select id="conf-select" class="filter-select">
-                            <option value="0.80" selected>≥ 0.80 (High Confidence)</option>
-                            <option value="0.70">≥ 0.70 (Medium Confidence)</option>
-                            <option value="0.50">≥ 0.50 (All Candidate Edges)</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label for="hop-select">Multi-Hop Traversal</label>
-                        <select id="hop-select" class="filter-select">
-                            <option value="1">1-Hop Direct Targets</option>
-                            <option value="2" selected>2-Hop SPOKE Neighborhood</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Entity Classes</label>
-                        <div class="checkbox-list">
-                            <label><input type="checkbox" checked> Gene / Protein (HGNC)</label>
-                            <label><input type="checkbox" checked> Viral Gene (EBV)</label>
-                            <label><input type="checkbox" checked> Cell State (AnnData)</label>
-                            <label><input type="checkbox" checked> Disease Outcome</label>
+            <div id="search-results-content" class="dashboard-grid">
+                <!-- Left: Synthesized Answer & Triples -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="card">
+                        <div class="card-header">
+                            <span>🤖 LLM Synthesized Scientific Insight</span>
+                            <span id="answer-confidence" style="font-size: 0.8rem; color: var(--accent-emerald); font-weight:700;">Confidence: 94.5%</span>
+                        </div>
+                        <div id="answer-text" style="line-height: 1.6; color: var(--text-primary); font-size: 0.95rem;">
+                            Enter a search query above to execute vector retrieval and subgraph pruning across 13,301 PMC articles and 30M SPOKE relationships.
                         </div>
                     </div>
-                </div>
 
-                <!-- Center: Synthesized Evidence & Triples Table -->
-                <div class="card">
-                    <div class="card-header">
-                        <span>Synthesized Literature Evidence</span>
-                        <span class="confidence-chip" id="answer-confidence">Confidence: 96.2%</span>
-                    </div>
-
-                    <div id="search-loader" class="loading-spinner"></div>
-
-                    <div id="search-results-content">
-                        <div class="summary-body" id="answer-text">
-                            High-throughput peptide microarrays demonstrate structural homology between EBV nuclear antigen <b>EBNA1 (residues 385–420)</b> and human <b>GlialCAM (residues 370–400)</b> in CNS myelin sheaths. In HLA-DRB1*15:01 individuals, somatic hypermutation produces cross-reactive autoantibodies driving neuro-demyelination [DOI:10.1038/s41586-022-04432-d].
-                        </div>
-
-                        <div class="card-header" style="font-size: 0.85rem; margin-top: 1rem;">Pruned Subgraph Triples</div>
-                        <table class="triples-table">
+                    <div class="card">
+                        <div class="card-header">🧬 Pruned Fact Triples (Knowledge Subgraph)</div>
+                        <table class="curation-table">
                             <thead>
                                 <tr>
-                                    <th>Subject Entity</th>
+                                    <th>Subject</th>
                                     <th>Predicate</th>
-                                    <th>Object Entity</th>
-                                    <th>Score</th>
+                                    <th>Object</th>
+                                    <th>Conf</th>
                                 </tr>
                             </thead>
                             <tbody id="triples-tbody">
-                                <tr>
-                                    <td><span class="entity-tag tag-viral">EBNA1</span></td>
-                                    <td style="color: var(--text-secondary);">CROSS_REACTS_WITH</td>
-                                    <td><span class="entity-tag tag-gene">GlialCAM</span></td>
-                                    <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">0.96</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="entity-tag tag-gene">GlialCAM</span></td>
-                                    <td style="color: var(--text-secondary);">LOCATED_IN</td>
-                                    <td><span class="entity-tag tag-cell">Oligodendrocyte</span></td>
-                                    <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">0.92</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="entity-tag tag-cell">Oligodendrocyte</span></td>
-                                    <td style="color: var(--text-secondary);">ASSOCIATED_WITH</td>
-                                    <td><span class="entity-tag tag-disease">Multiple Sclerosis</span></td>
-                                    <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">0.95</td>
-                                </tr>
+                                <tr><td colspan="4" style="color: var(--text-muted);">Run search to view extracted triples...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
 
-                        <div class="card-header" style="font-size: 0.85rem; margin-top: 1.25rem;">Primary Literature Citations</div>
-                        <div class="citations-list" id="citations-list">
-                            <div class="citation-item">
-                                <a href="https://pubmed.ncbi.nlm.org/35026154" target="_blank">📄 Nature (2022) — PMID:35026154</a> | Longitudinal analysis reveals high-affinity EBNA1 cross-reactivity with GlialCAM in Multiple Sclerosis.
+                <!-- Right: Cytoscape Subgraph & Citations -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="card">
+                        <div class="card-header">
+                            <span>🌐 Interactive Subgraph Network</span>
+                            <div>
+                                <button class="control-select" onclick="changeGraphLayout('cose')">COSE</button>
+                                <button class="control-select" onclick="changeGraphLayout('concentric')">Concentric</button>
+                                <button class="control-select" onclick="fitGraph()">Fit View</button>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Right: Subnetwork Topology & Inspector -->
-                <div class="card">
-                    <div class="card-header">
-                        <span>Subnetwork Topology</span>
-                        <div class="graph-toolbar">
-                            <select class="tool-btn" onchange="changeGraphLayout(this.value)">
-                                <option value="cose">Layout: Cose</option>
-                                <option value="circle">Layout: Circle</option>
-                                <option value="concentric">Layout: Concentric</option>
-                            </select>
-                            <button class="tool-btn" onclick="fitGraph()">Fit Zoom</button>
+                        <div id="cy"></div>
+                        <div id="inspector-panel" class="inspector-panel">
+                            <b id="inspector-title">Selected Entity</b> | Type: <span id="inspector-type">GENE</span> | ID: <code id="inspector-id">N/A</code>
                         </div>
                     </div>
 
-                    <div id="cy"></div>
-
-                    <!-- Slide-Out Inspector -->
-                    <div id="inspector-panel" class="inspector-panel">
-                        <div class="inspector-title" id="inspector-title">Selected Entity: EBNA1</div>
-                        <div style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5;">
-                            <p><b>Class:</b> <span id="inspector-type">VIRAL_GENE</span></p>
-                            <p><b>Synonyms:</b> Canonical Viral Nuclear Antigen</p>
-                            <p><b>Database ID:</b> <span id="inspector-id">EBNA1</span></p>
+                    <div class="card">
+                        <div class="card-header">📚 Literature Evidence Citations</div>
+                        <div id="citations-list">
+                            <div style="color: var(--text-muted);">Citations with character offsets will appear here.</div>
                         </div>
                     </div>
                 </div>
-
             </div>
-
         </div>
 
-        <!-- PANEL 2: CROSS-SILO HYPOTHESIS -->
-        <div id="hypothesis-panel" class="panel">
+        <!-- PANEL 2: HYPOTHESIS DISCOVERY -->
+        <div id="hypo-panel" class="panel">
             <div class="card">
-                <div class="card-header">💡 Cross-Silo Niche Overlap Discovery</div>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Compare distinct disease silos to discover shared cellular states and marker genes.</p>
+                <div class="card-header">💡 Multi-Disease Cross-Silo Hypothesis Generator</div>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Discover latent cell-state overlaps and shared mechanisms across distinct pathology literature silos.</p>
                 
-                <div class="search-box-row" style="margin-bottom: 1.25rem;">
-                    <input type="text" id="hypo-silo-a" class="search-input" value="Burkitt Lymphoma" placeholder="Disease Silo A">
-                    <input type="text" id="hypo-silo-b" class="search-input" value="Multiple Sclerosis" placeholder="Disease Silo B">
-                    <button class="btn-search" onclick="runHypothesisDiscovery()">Discover Overlap</button>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                    <input type="text" id="hypo-silo-a" class="search-input" value="EBV Burkitt Lymphoma">
+                    <span style="align-self: center; font-weight: 700; color: var(--text-muted);">⚡ OVERLAP ⚡</span>
+                    <input type="text" id="hypo-silo-b" class="search-input" value="Multiple Sclerosis Demyelination">
+                    <button class="btn-search" onclick="runHypothesisDiscovery()">Generate Hypotheses</button>
                 </div>
 
                 <div id="hypo-loader" class="loading-spinner"></div>
-                <div id="hypo-output" class="hypothesis-container" style="display: none;"></div>
+
+                <div id="hypo-output" class="dashboard-grid" style="display: none;"></div>
             </div>
         </div>
 
         <!-- PANEL 3: GRAPH EXPLORER -->
         <div id="explorer-panel" class="panel">
             <div class="card">
-                <div class="card-header">🌐 Entity Graph Explorer</div>
+                <div class="card-header">
+                    <span>🌐 Global Knowledge Graph Explorer</span>
+                    <span id="explorer-stats" style="font-size: 0.8rem; font-weight: 700; color: var(--accent-cyan);">Neighborhood: 0 nodes</span>
+                </div>
                 <div class="search-box-row" style="margin-bottom: 1.25rem;">
-                    <input type="text" id="explorer-input" class="search-input" placeholder="Type entity name or ID (e.g. LMP1, EBNA1, CD21)">
-                    <button class="btn-search" onclick="exploreEntity()">Explore Entity</button>
+                    <input type="text" id="explorer-input" class="search-input" placeholder="Type entity symbol or ID (e.g. LMP1, EBNA1, CD21, GlialCAM, TRAF2)" value="LMP1">
+                    <button class="btn-search" onclick="exploreEntity()">Explore Entity Neighborhood</button>
                 </div>
                 <div id="explorer-loader" class="loading-spinner"></div>
-                <div id="cy-explorer" style="width: 100%; height: 500px; background: #F1F5F9; border-radius: 6px; border: 1px solid var(--border-subtle);"></div>
+                <div id="cy-explorer"></div>
+                <div id="explorer-inspector" class="inspector-panel">
+                    <b id="exp-inspector-title">Selected Entity</b> | Type: <span id="exp-inspector-type">GENE</span> | ID: <code id="exp-inspector-id">N/A</code>
+                </div>
             </div>
         </div>
 
         <!-- PANEL 4: HUMAN CURATION -->
         <div id="curation-panel" class="panel">
             <div class="card">
-                <div class="card-header">⚖️ Human-in-the-Loop Edge Curation</div>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Review pending relationships extracted by the automated NLP pipeline before graph promotion.</p>
+                <div class="card-header">
+                    <span>⚖️ Human-in-the-Loop Edge Curation & Reviewer Consensus</span>
+                    <span id="curation-user-status" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Sign in to cast consensus votes</span>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    Review pending relationships extracted by the automated NLP pipeline. Consensus votes by verified curators promote edges to <b>APPROVED</b> graph status upon reaching <b>+2 net consensus score</b>.
+                </p>
                 <table class="curation-table">
                     <thead>
                         <tr>
@@ -718,8 +666,9 @@
                             <th>Predicate</th>
                             <th>Object Entity</th>
                             <th>Confidence</th>
+                            <th>Consensus Tally</th>
                             <th>Literature Citation</th>
-                            <th>Action</th>
+                            <th>Your Vote Action</th>
                         </tr>
                     </thead>
                     <tbody id="curation-tbody"></tbody>
@@ -729,22 +678,233 @@
 
     </div>
 
+    <!-- AUTHENTICATION MODAL -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span id="auth-modal-title">🔐 Reviewer / Curator Sign In</span>
+                <span style="cursor: pointer; font-size: 1.2rem;" onclick="closeAuthModal()">✕</span>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">
+                <button id="tab-auth-login" class="tab-btn active" onclick="toggleAuthTab('login')">Sign In</button>
+                <button id="tab-auth-signup" class="tab-btn" onclick="toggleAuthTab('signup')">Register Curator</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="form-auth-login" onsubmit="handleLoginSubmit(event)">
+                <div class="modal-form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" class="modal-input" value="reviewer@ebv-kg.org" required>
+                </div>
+                <div class="modal-form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-pass" class="modal-input" value="reviewer123" required>
+                </div>
+                <button type="submit" class="btn-modal-submit">Sign In to Curator System</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="form-auth-signup" onsubmit="handleSignupSubmit(event)" style="display:none;">
+                <div class="modal-form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="signup-name" class="modal-input" placeholder="Dr. Jane Smith" required>
+                </div>
+                <div class="modal-form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="signup-email" class="modal-input" placeholder="jane@university.edu" required>
+                </div>
+                <div class="modal-form-group">
+                    <label>Password</label>
+                    <input type="password" id="signup-pass" class="modal-input" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-modal-submit">Register New Curator Account</button>
+            </form>
+
+            <div class="demo-creds-box">
+                <b>🔑 Seeded Demo Accounts for Reviewers:</b><br>
+                • <b>Curator:</b> <code>reviewer@ebv-kg.org</code> / <code>reviewer123</code><br>
+                • <b>Admin:</b> <code>admin@ebv-kg.org</code> / <code>admin123</code>
+            </div>
+        </div>
+    </div>
+
 <script>
     let cyInstance = null;
+    let cyExplorerInstance = null;
+    let currentUser = null;
 
-    // Fetch Telemetry Counts on Load
+    // --- Theme Management (Bright default, Dark, System) ---
+    function initTheme() {
+        const savedTheme = localStorage.getItem('theme_preference') || 'bright';
+        document.getElementById('theme-select').value = savedTheme;
+        applyTheme(savedTheme);
+    }
+
+    function changeTheme(themeVal) {
+        localStorage.setItem('theme_preference', themeVal);
+        applyTheme(themeVal);
+    }
+
+    function applyTheme(themeVal) {
+        const html = document.documentElement;
+        if (themeVal === 'system') {
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            html.setAttribute('data-theme', systemDark ? 'dark' : 'bright');
+        } else {
+            html.setAttribute('data-theme', themeVal);
+        }
+    }
+
+    // --- Auth Management ---
+    function getSessionToken() {
+        return localStorage.getItem('ebv_session_token');
+    }
+
+    async function checkAuthSession() {
+        const token = getSessionToken();
+        if (!token) {
+            updateAuthHeader(null);
+            return;
+        }
+        try {
+            const res = await fetch('/api/v1/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                currentUser = data.user;
+                updateAuthHeader(currentUser);
+            } else {
+                localStorage.removeItem('ebv_session_token');
+                currentUser = null;
+                updateAuthHeader(null);
+            }
+        } catch(e) {
+            updateAuthHeader(null);
+        }
+    }
+
+    function updateAuthHeader(user) {
+        const area = document.getElementById('auth-header-area');
+        const statusSpan = document.getElementById('curation-user-status');
+        if (user) {
+            area.innerHTML = `
+                <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; font-weight:600; color:#F8FAFC;">
+                    <span>👤 ${user.full_name} (${user.role})</span>
+                    <button class="btn-auth" style="background:#475569;" onclick="handleLogout()">Sign Out</button>
+                </div>`;
+            if (statusSpan) statusSpan.innerHTML = `<span style="color:var(--accent-emerald);">Logged in as ${user.full_name} (${user.role})</span>`;
+        } else {
+            area.innerHTML = `<button class="btn-auth" onclick="openAuthModal()">🔑 Sign In / Curator Access</button>`;
+            if (statusSpan) statusSpan.innerHTML = `<span>Sign in as a Curator to cast consensus votes</span>`;
+        }
+    }
+
+    function openAuthModal() {
+        document.getElementById('auth-modal').style.display = 'flex';
+    }
+
+    function closeAuthModal() {
+        document.getElementById('auth-modal').style.display = 'none';
+    }
+
+    function toggleAuthTab(mode) {
+        if (mode === 'login') {
+            document.getElementById('tab-auth-login').classList.add('active');
+            document.getElementById('tab-auth-signup').classList.remove('active');
+            document.getElementById('form-auth-login').style.display = 'block';
+            document.getElementById('form-auth-signup').style.display = 'none';
+        } else {
+            document.getElementById('tab-auth-login').classList.remove('active');
+            document.getElementById('tab-auth-signup').classList.add('active');
+            document.getElementById('form-auth-login').style.display = 'none';
+            document.getElementById('form-auth-signup').style.display = 'block';
+        }
+    }
+
+    async function handleLoginSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-pass').value;
+
+        try {
+            const res = await fetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('ebv_session_token', data.token);
+                currentUser = data.user;
+                updateAuthHeader(currentUser);
+                closeAuthModal();
+                fetchCurationData();
+            } else {
+                alert(data.detail || 'Login failed.');
+            }
+        } catch(err) {
+            alert('Login request error.');
+        }
+    }
+
+    async function handleSignupSubmit(e) {
+        e.preventDefault();
+        const full_name = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-pass').value;
+
+        try {
+            const res = await fetch('/api/v1/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ full_name, email, password, role: 'curator' })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('ebv_session_token', data.token);
+                currentUser = data.user;
+                updateAuthHeader(currentUser);
+                closeAuthModal();
+                fetchCurationData();
+            } else {
+                alert(data.detail || 'Registration failed.');
+            }
+        } catch(err) {
+            alert('Registration request error.');
+        }
+    }
+
+    async function handleLogout() {
+        const token = getSessionToken();
+        if (token) {
+            try {
+                await fetch('/api/v1/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch(e) {}
+        }
+        localStorage.removeItem('ebv_session_token');
+        currentUser = null;
+        updateAuthHeader(null);
+        fetchCurationData();
+    }
+
+    // --- Telemetry Counts ---
     async function loadTelemetry() {
         try {
             const res = await fetch('/api/v1/metrics');
             if (res.ok) {
                 const data = await res.json();
-                document.getElementById('tele-docs').innerText = (data.documents || 13043).toLocaleString();
-                document.getElementById('tele-chunks').innerText = (data.chunks || 231949).toLocaleString();
-                document.getElementById('tele-edges').innerText = (data.approved_relationships || 1868).toLocaleString();
+                document.getElementById('tele-docs').innerText = (data.documents || 13301).toLocaleString();
+                document.getElementById('tele-chunks').innerText = (data.chunks || 237725).toLocaleString();
+                document.getElementById('tele-entities').innerText = (data.entities || 451632).toLocaleString();
+                document.getElementById('tele-edges').innerText = (data.approved_relationships || 30024120).toLocaleString();
             }
         } catch(e) {}
     }
-    loadTelemetry();
 
     function switchTab(tabId, evt) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -754,6 +914,19 @@
         document.getElementById(`${tabId}-panel`).classList.add('active');
 
         if (tabId === 'curation') fetchCurationData();
+        if (tabId === 'explorer' && !cyExplorerInstance) exploreEntity();
+    }
+
+    function openExplorerForSymbol(symbol) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+        
+        const explorerBtn = document.querySelectorAll('.tab-btn')[2];
+        if (explorerBtn) explorerBtn.classList.add('active');
+        document.getElementById('explorer-panel').classList.add('active');
+        
+        document.getElementById('explorer-input').value = symbol;
+        exploreEntity();
     }
 
     let autocompleteTimer = null;
@@ -774,7 +947,7 @@
                     return;
                 }
                 listDiv.innerHTML = suggestions.map(s => 
-                    `<div style="padding: 0.6rem 1rem; font-size: 0.85rem; color: var(--brand-navy); cursor: pointer; border-bottom: 1px solid var(--border-subtle);" onclick="setQuery('${s.replace(/'/g, "\\'")}'); document.getElementById('autocomplete-list').style.display='none';">${s}</div>`
+                    `<div style="padding: 0.6rem 1rem; font-size: 0.85rem; color: var(--text-primary); cursor: pointer; border-bottom: 1px solid var(--border-subtle);" onclick="setQuery('${s.replace(/'/g, "\\'")}'); document.getElementById('autocomplete-list').style.display='none';">${s}</div>`
                 ).join('');
                 listDiv.style.display = 'block';
             } catch(e) {
@@ -796,7 +969,6 @@
         if (listDiv) listDiv.style.display = 'none';
         runGraphRAG();
     }
-
 
     async function runGraphRAG() {
         const query = document.getElementById('query-input').value.trim();
@@ -826,7 +998,7 @@
 
             // Synthesized Answer & Confidence
             document.getElementById('answer-text').innerHTML = data.synthesized_answer || "No synthesis produced.";
-            document.getElementById('answer-confidence').innerText = `Confidence: ${(data.confidence_score * 100).toFixed(1)}%`;
+            document.getElementById('answer-confidence').innerText = `Confidence: ${((data.confidence_score || 0.85) * 100).toFixed(1)}%`;
 
             // Triples Table
             const tbody = document.getElementById('triples-tbody');
@@ -836,9 +1008,9 @@
                 const oType = (fact.object_type || 'CELL_STATE').toLowerCase();
                 tbody.innerHTML += `
                     <tr>
-                        <td><span class="entity-tag tag-${sType}">${fact.subject}</span></td>
+                        <td><span class="entity-tag tag-${sType}" onclick="openExplorerForSymbol('${fact.subject}')">${fact.subject}</span></td>
                         <td style="color: var(--text-secondary);">${fact.predicate}</td>
-                        <td><span class="entity-tag tag-${oType}">${fact.object}</span></td>
+                        <td><span class="entity-tag tag-${oType}" onclick="openExplorerForSymbol('${fact.object}')">${fact.object}</span></td>
                         <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">${(fact.confidence || 0.9).toFixed(2)}</td>
                     </tr>`;
             });
@@ -854,7 +1026,7 @@
                     </div>`;
             });
 
-            // Graph Cytoscape
+            // Render Cytoscape Graph
             renderCytoscapeGraph(data.pruned_facts || []);
 
         } catch (err) {
@@ -892,7 +1064,7 @@
                     selector: 'node',
                     style: {
                         'label': 'data(label)',
-                        'color': '#0F172A',
+                        'color': 'var(--text-primary)',
                         'background-color': function(ele) {
                             const type = ele.data('type');
                             if (type === 'GENE' || type === 'PROTEIN') return '#0284C7';
@@ -911,13 +1083,13 @@
                     selector: 'edge',
                     style: {
                         'width': 2,
-                        'line-color': '#CBD5E1',
-                        'target-arrow-color': '#94A3B8',
+                        'line-color': 'var(--border-strong)',
+                        'target-arrow-color': 'var(--border-strong)',
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
                         'label': 'data(label)',
                         'font-size': '9px',
-                        'color': '#64748B'
+                        'color': 'var(--text-muted)'
                     }
                 }
             ],
@@ -931,6 +1103,105 @@
             document.getElementById('inspector-title').innerText = `Selected Entity: ${node.data('label')}`;
             document.getElementById('inspector-type').innerText = node.data('type') || 'GENE';
             document.getElementById('inspector-id').innerText = node.data('id');
+        });
+    }
+
+    // --- REQUIREMENT 2: GRAPH EXPLORER IMPLEMENTATION ---
+    async function exploreEntity() {
+        const inputVal = document.getElementById('explorer-input').value.trim() || 'LMP1';
+        const loader = document.getElementById('explorer-loader');
+        const statsSpan = document.getElementById('explorer-stats');
+        loader.style.display = 'block';
+
+        try {
+            const res = await fetch(`/api/v1/graph/explore/${encodeURIComponent(inputVal)}`);
+            const data = await res.json();
+            loader.style.display = 'none';
+
+            const nodes = data.nodes || [];
+            const rels = data.relationships || [];
+
+            statsSpan.innerText = `Neighborhood: ${nodes.length} nodes, ${rels.length} edges`;
+
+            renderExplorerCytoscape(nodes, rels);
+        } catch(err) {
+            loader.style.display = 'none';
+            statsSpan.innerText = `Error querying neighborhood`;
+        }
+    }
+
+    function renderExplorerCytoscape(nodes, rels) {
+        const elements = [];
+
+        nodes.forEach(n => {
+            elements.push({
+                data: {
+                    id: n.id,
+                    label: n.name || n.id,
+                    type: n.entity_type || n.label || 'GENE'
+                }
+            });
+        });
+
+        rels.forEach((r, idx) => {
+            elements.push({
+                data: {
+                    id: r.id || `relexp_${idx}`,
+                    source: r.source,
+                    target: r.target,
+                    label: r.type || 'ASSOCIATED_WITH'
+                }
+            });
+        });
+
+        cyExplorerInstance = cytoscape({
+            container: document.getElementById('cy-explorer'),
+            elements: elements,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(label)',
+                        'color': 'var(--text-primary)',
+                        'background-color': function(ele) {
+                            const type = ele.data('type');
+                            if (type === 'GENE' || type === 'PROTEIN') return '#0284C7';
+                            if (type === 'VIRAL_GENE') return '#7E22CE';
+                            if (type === 'DISEASE_OUTCOME') return '#BE185D';
+                            if (type === 'CELL_STATE') return '#047857';
+                            if (type === 'Paper') return '#475569';
+                            return '#B45309';
+                        },
+                        'font-size': '11px',
+                        'font-family': 'Inter, sans-serif',
+                        'text-valign': 'bottom',
+                        'text-margin-y': 4
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': 'var(--border-strong)',
+                        'target-arrow-color': 'var(--border-strong)',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'label': 'data(label)',
+                        'font-size': '9px',
+                        'color': 'var(--text-muted)'
+                    }
+                }
+            ],
+            layout: { name: 'cose', animate: true }
+        });
+
+        cyExplorerInstance.on('tap', 'node', function(evt){
+            const node = evt.target;
+            const panel = document.getElementById('explorer-inspector');
+            panel.style.display = 'block';
+            document.getElementById('exp-inspector-title').innerText = `Selected Entity: ${node.data('label')}`;
+            document.getElementById('exp-inspector-type').innerText = node.data('type') || 'GENE';
+            document.getElementById('exp-inspector-id').innerText = node.data('id');
         });
     }
 
@@ -979,33 +1250,95 @@
         }
     }
 
+    // --- REQUIREMENT 3 & 4: DYNAMIC HUMAN CURATION & CONSENSUS VOTING ---
     async function fetchCurationData() {
         const tbody = document.getElementById('curation-tbody');
-        tbody.innerHTML = `
-            <tr>
-                <td><span class="entity-tag tag-viral">LMP1</span></td>
-                <td>TARGETS</td>
-                <td><span class="entity-tag tag-gene">TRAF2</span></td>
-                <td><span style="color: var(--accent-emerald); font-weight:700;">0.94</span></td>
-                <td><a href="https://pubmed.ncbi.nlm.org/20591151" target="_blank" style="color: var(--brand-blue);">PMID:20591151</a></td>
-                <td>
-                    <button class="btn-approve" onclick="this.parentElement.parentElement.remove()">Approve</button>
-                    <button class="btn-reject" onclick="this.parentElement.parentElement.remove()">Reject</button>
-                </td>
-            </tr>
-            <tr>
-                <td><span class="entity-tag tag-viral">EBNA1</span></td>
-                <td>CROSS_REACTS_WITH</td>
-                <td><span class="entity-tag tag-gene">GlialCAM</span></td>
-                <td><span style="color: var(--accent-emerald); font-weight:700;">0.98</span></td>
-                <td><a href="https://pubmed.ncbi.nlm.org/35026154" target="_blank" style="color: var(--brand-blue);">PMID:35026154</a></td>
-                <td>
-                    <button class="btn-approve" onclick="this.parentElement.parentElement.remove()">Approve</button>
-                    <button class="btn-reject" onclick="this.parentElement.parentElement.remove()">Reject</button>
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted); padding:1rem;">Loading pending curation edges from PostgreSQL...</td></tr>`;
+
+        const token = getSessionToken();
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+        try {
+            const res = await fetch('/api/v1/curation/pending?limit=50', { headers });
+            const data = await res.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted); padding:1rem;">No pending curation relationships found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const userVote = item.user_vote;
+                const approveClass = userVote === 'APPROVE' ? 'active-approve' : '';
+                const rejectClass = userVote === 'REJECT' ? 'active-reject' : '';
+
+                const sType = (item.source_entity_type || 'GENE').toLowerCase();
+                const oType = (item.target_entity_type || 'GENE').toLowerCase();
+
+                return `
+                    <tr>
+                        <td><span class="entity-tag tag-${sType}" onclick="openExplorerForSymbol('${item.source_name}')">${item.source_name}</span></td>
+                        <td style="color: var(--text-secondary); font-weight:600;">${item.relationship_type}</td>
+                        <td><span class="entity-tag tag-${oType}" onclick="openExplorerForSymbol('${item.target_name}')">${item.target_name}</span></td>
+                        <td><span style="color: var(--accent-emerald); font-weight:700;">${(item.confidence_score || 0.75).toFixed(2)}</span></td>
+                        <td>
+                            <span class="vote-tally">👍 ${item.approvals_count} | 👎 ${item.rejections_count} (Net: ${item.net_score >= 0 ? '+' : ''}${item.net_score})</span>
+                        </td>
+                        <td style="max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.8rem; color: var(--text-muted);" title="${item.citation_text.replace(/"/g, '&quot;')}">
+                            ${item.citation_text}
+                        </td>
+                        <td>
+                            <div style="display:flex; gap:0.4rem;">
+                                <button class="btn-vote ${approveClass}" onclick="castCurationVote('${item.relationship_id}', 'APPROVE')">👍 Approve</button>
+                                <button class="btn-vote ${rejectClass}" onclick="castCurationVote('${item.relationship_id}', 'REJECT')">👎 Reject</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+
+        } catch(err) {
+            tbody.innerHTML = `<tr><td colspan="7" style="color:#B91C1C; padding:1rem;">Failed to load pending curation data.</td></tr>`;
+        }
     }
+
+    async function castCurationVote(relationshipId, vote) {
+        const token = getSessionToken();
+        if (!token) {
+            alert('Please sign in as a Curator or Reviewer to cast consensus votes.');
+            openAuthModal();
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/v1/curation/vote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    relationship_id: relationshipId,
+                    vote: vote
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                fetchCurationData();
+            } else {
+                alert(data.detail || 'Vote failed.');
+            }
+        } catch(e) {
+            alert('Curation vote error.');
+        }
+    }
+
+    // --- On Load Initialization ---
+    window.addEventListener('DOMContentLoaded', () => {
+        initTheme();
+        loadTelemetry();
+        checkAuthSession();
+    });
 </script>
 
 </body>

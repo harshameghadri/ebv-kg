@@ -74,3 +74,40 @@ CREATE TABLE IF NOT EXISTS relationship_evidence (
 -- Indexes for relationship_evidence
 CREATE INDEX IF NOT EXISTS idx_relationship_evidence_relationship_id ON relationship_evidence(relationship_id);
 CREATE INDEX IF NOT EXISTS idx_relationship_evidence_chunk_id ON relationship_evidence(chunk_id);
+
+-- 6. Users Table (Reviewers & Curators)
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY,
+    email VARCHAR UNIQUE NOT NULL,
+    password_hash VARCHAR NOT NULL,
+    full_name VARCHAR NOT NULL,
+    role VARCHAR NOT NULL DEFAULT 'curator',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- 7. User Sessions Table (Authentication)
+CREATE TABLE IF NOT EXISTS user_sessions (
+    token VARCHAR PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+
+-- 8. Curation Votes Table (Consensus Infrastructure)
+CREATE TABLE IF NOT EXISTS curation_votes (
+    id UUID PRIMARY KEY,
+    relationship_id UUID NOT NULL REFERENCES relationships(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vote VARCHAR NOT NULL CHECK (vote IN ('APPROVE', 'REJECT')),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_curation_votes_rel_user UNIQUE (relationship_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_curation_votes_relationship ON curation_votes(relationship_id);
+CREATE INDEX IF NOT EXISTS idx_curation_votes_user ON curation_votes(user_id);
+

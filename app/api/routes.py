@@ -15,6 +15,7 @@ from app.retrieval.hybrid import HybridRetriever
 from app.retrieval.graph import GraphRetriever
 from app.materialization.neo4j_client import Neo4jClient
 from app.synthesis.llm import ClaudeSynthesisClient
+from app.api.auth_routes import get_current_user_from_header
 
 logger = logging.getLogger(__name__)
 
@@ -282,17 +283,21 @@ async def suggest_search_terms(q: str = ""):
     return {"suggestions": matched[:8]}
 
 
+@router.get("/v1/graph/explore/{entity_id}")
+@router.get("/api/v1/graph/explore/{entity_id}")
+@router.get("/api/graph/explore/{entity_id}")
 @router.get("/graph/explore/{entity_id}")
 async def explore_graph(
     entity_id: str,
     graph_retriever: GraphRetriever = Depends(get_graph_retriever),
     neo4j_client: Neo4jClient = Depends(get_neo4j_client),
 ):
-    """Traverse 1-hop and 2-hop neighborhoods in Neo4j for a given entity symbol, name or canonical ID."""
-    # Try resolving entity_id as canonical ID or name
+    """Traverse 1-hop and 2-hop neighborhoods for a given entity symbol, name or canonical ID."""
+    clean_id = entity_id.strip()
+    cids = []
     cypher_check = "MATCH (e:Entity) WHERE e.canonical_id = $eid OR toLower(e.name) = toLower($eid) RETURN DISTINCT e.canonical_id AS canonical_id"
     try:
-        res = neo4j_client.execute_query(cypher_check, {"eid": entity_id})
+        res = neo4j_client.execute_query(cypher_check, {"eid": clean_id})
         cids = [
             r.get("canonical_id") if hasattr(r, "get") else dict(r).get("canonical_id")
             for r in res
@@ -303,25 +308,23 @@ async def explore_graph(
         cids = []
         
     if not cids:
-        # Fallback to synonym resolver / simple name matching
         try:
-            cids = graph_retriever._find_entities_by_name(entity_id)
+            cids = graph_retriever._find_entities_by_name(clean_id)
         except Exception:
             cids = []
             
     if not cids:
-        # Fallback to querying with the literal input symbol
-        cids = [entity_id]
+        cids = [clean_id]
         
+    neighborhood = {}
     try:
         neighborhood = graph_retriever.get_neighborhood(cids)
     except Exception as e:
-        logger.error("Failed to query Neo4j graph neighborhood: %s", e)
-        return {"nodes": [], "relationships": []}
-        
-    # Process entity and paper nodes
+        logger.warning("Neo4j graph neighborhood query failed, falling back to PostgreSQL: %s", e)
+
     nodes = []
     seen_nodes = set()
+    relationships = []
     
     for ent in neighborhood.get("entities", []):
         cid = ent["canonical_id"]
@@ -347,11 +350,9 @@ async def explore_graph(
                 "published_date": str(paper.get("published_date")) if paper.get("published_date") else None,
             })
             
-    # Process relationships with confidence > 0.70
-    relationships = []
     for rel in neighborhood.get("relationships", []):
         conf = rel.get("confidence_score")
-        if conf is not None and conf > 0.70:
+        if conf is not None and conf > 0.50:
             relationships.append({
                 "id": str(rel.get("id")) if rel.get("id") else None,
                 "source": rel["source_id"],
@@ -363,41 +364,112 @@ async def explore_graph(
             
     for m in neighborhood.get("mentions", []):
         conf = m.get("confidence_score")
-        if conf is not None and conf > 0.70:
+        if conf is not None and conf > 0.50:
             relationships.append({
                 "source": m["paper_doi"],
                 "target": m["entity_id"],
                 "type": "MENTIONS",
                 "confidence_score": conf,
             })
+
+    # PostgreSQL Fallback if Neo4j returned no nodes
+    if not nodes:
+        try:
+            pg_dsn = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DSN")
+            if pg_dsn:
+                with psycopg.connect(pg_dsn, row_factory=dict_row) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            SELECT 
+                                r.id AS relationship_id,
+                                src.canonical_id AS source_id,
+                                src.name AS source_name,
+                                src.entity_type AS source_type,
+                                tgt.canonical_id AS target_id,
+                                tgt.name AS target_name,
+                                tgt.entity_type AS target_type,
+                                r.relationship_type,
+                                r.confidence_score
+                            FROM relationships r
+                            JOIN normalized_entities src ON r.source_entity_id = src.id
+                            JOIN normalized_entities tgt ON r.target_entity_id = tgt.id
+                            WHERE src.canonical_id ILIKE %s OR src.name ILIKE %s
+                               OR tgt.canonical_id ILIKE %s OR tgt.name ILIKE %s
+                            ORDER BY r.confidence_score DESC
+                            LIMIT 30
+                            """,
+                            (clean_id, f"%{clean_id}%", clean_id, f"%{clean_id}%")
+                        )
+                        pg_rows = cur.fetchall()
+                        for r in pg_rows:
+                            if r["source_id"] not in seen_nodes:
+                                seen_nodes.add(r["source_id"])
+                                nodes.append({"id": r["source_id"], "label": "Entity", "name": r["source_name"], "entity_type": r["source_type"]})
+                            if r["target_id"] not in seen_nodes:
+                                seen_nodes.add(r["target_id"])
+                                nodes.append({"id": r["target_id"], "label": "Entity", "name": r["target_name"], "entity_type": r["target_type"]})
+                            relationships.append({
+                                "id": str(r["relationship_id"]),
+                                "source": r["source_id"],
+                                "target": r["target_id"],
+                                "type": r["relationship_type"],
+                                "confidence_score": float(r["confidence_score"] or 0.85)
+                            })
+        except Exception as pg_err:
+            logger.warning("PostgreSQL graph explore fallback error: %s", pg_err)
             
     return {
         "nodes": nodes,
         "relationships": relationships
     }
 
+class CurationVoteRequest(BaseModel):
+    relationship_id: str
+    vote: str  # 'APPROVE' or 'REJECT'
+    comment: Optional[str] = None
+
+@router.get("/v1/curation/pending")
+@router.get("/api/v1/curation/pending")
+@router.get("/api/curation/pending")
 @router.get("/curation/pending")
-async def curation_pending(conn = Depends(get_pg_conn)):
-    """Fetch all pending relationships from PostgreSQL with associated entity names and citation text."""
+async def curation_pending(
+    limit: int = 50,
+    conn = Depends(get_pg_conn),
+    user: Optional[Dict[str, Any]] = Depends(get_current_user_from_header)
+):
+    """Fetch pending relationships from PostgreSQL with associated vote tallies."""
+    user_id = user.get("id") if user else None
+
     query = """
     SELECT 
         r.id AS relationship_id,
         src.canonical_id AS source_canonical_id,
         src.name AS source_name,
+        src.entity_type AS source_entity_type,
         tgt.canonical_id AS target_canonical_id,
         tgt.name AS target_name,
+        tgt.entity_type AS target_entity_type,
         r.relationship_type,
         r.confidence_score,
-        re.citation_text
+        MIN(re.citation_text) AS citation_text,
+        COUNT(CASE WHEN cv.vote = 'APPROVE' THEN 1 END) AS approvals_count,
+        COUNT(CASE WHEN cv.vote = 'REJECT' THEN 1 END) AS rejections_count,
+        MAX(CASE WHEN cv.user_id = %s THEN cv.vote END) AS user_vote
     FROM relationships r
     JOIN normalized_entities src ON r.source_entity_id = src.id
     JOIN normalized_entities tgt ON r.target_entity_id = tgt.id
     LEFT JOIN relationship_evidence re ON r.id = re.relationship_id
+    LEFT JOIN curation_votes cv ON r.id = cv.relationship_id
     WHERE r.curation_status = 'PENDING'
+    GROUP BY r.id, src.canonical_id, src.name, src.entity_type, tgt.canonical_id, tgt.name, tgt.entity_type, r.relationship_type, r.confidence_score
+    ORDER BY r.confidence_score DESC
+    LIMIT %s
     """
     try:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(query)
+            user_uuid = UUID(user_id) if user_id else None
+            cur.execute(query, (user_uuid, limit))
             rows = cur.fetchall()
     except Exception as e:
         logger.error("Failed to query pending relationships: %s", e)
@@ -405,17 +477,150 @@ async def curation_pending(conn = Depends(get_pg_conn)):
         
     results = []
     for row in rows:
+        approvals = int(row["approvals_count"] or 0)
+        rejections = int(row["rejections_count"] or 0)
+        net_score = approvals - rejections
         results.append({
             "relationship_id": str(row["relationship_id"]),
             "source_canonical_id": row["source_canonical_id"],
             "source_name": row["source_name"],
+            "source_entity_type": row["source_entity_type"] or "GENE",
             "target_canonical_id": row["target_canonical_id"],
             "target_name": row["target_name"],
+            "target_entity_type": row["target_entity_type"] or "GENE",
             "relationship_type": row["relationship_type"],
-            "confidence_score": row["confidence_score"],
-            "citation_text": row["citation_text"],
+            "confidence_score": float(row["confidence_score"] or 0.75),
+            "citation_text": row["citation_text"] or "Literature co-occurrence evidence",
+            "approvals_count": approvals,
+            "rejections_count": rejections,
+            "net_score": net_score,
+            "user_vote": row["user_vote"]
         })
     return results
+
+@router.post("/v1/curation/vote")
+@router.post("/api/v1/curation/vote")
+@router.post("/api/curation/vote")
+@router.post("/curation/vote")
+async def curation_vote(
+    req: CurationVoteRequest,
+    conn = Depends(get_pg_conn),
+    user: Optional[Dict[str, Any]] = Depends(get_current_user_from_header),
+    neo4j_client: Neo4jClient = Depends(get_neo4j_client)
+):
+    """Cast a reviewer consensus vote on a pending relationship."""
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required. Please sign in to cast curation votes.")
+    
+    vote_clean = req.vote.strip().upper()
+    if vote_clean not in ("APPROVE", "REJECT"):
+        raise HTTPException(status_code=400, detail="Vote must be 'APPROVE' or 'REJECT'")
+
+    rel_id = req.relationship_id
+    user_id = UUID(user["id"])
+    user_role = user.get("role", "curator")
+
+    try:
+        new_status = "PENDING"
+        approvals = 0
+        rejections = 0
+        net_score = 0
+
+        with conn.transaction():
+            with conn.cursor(row_factory=dict_row) as cur:
+                # 1. Upsert curator vote
+                vote_id = uuid.uuid4()
+                cur.execute(
+                    """
+                    INSERT INTO curation_votes (id, relationship_id, user_id, vote, comment)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (relationship_id, user_id) DO UPDATE
+                    SET vote = EXCLUDED.vote, comment = EXCLUDED.comment, created_at = CURRENT_TIMESTAMP
+                    """,
+                    (vote_id, UUID(rel_id), user_id, vote_clean, req.comment)
+                )
+
+                # 2. Compute aggregate votes for this relationship
+                cur.execute(
+                    """
+                    SELECT 
+                        COUNT(CASE WHEN vote = 'APPROVE' THEN 1 END) as approvals,
+                        COUNT(CASE WHEN vote = 'REJECT' THEN 1 END) as rejections
+                    FROM curation_votes
+                    WHERE relationship_id = %s
+                    """,
+                    (UUID(rel_id),)
+                )
+                vote_tally = cur.fetchone()
+                approvals = int(vote_tally["approvals"] or 0)
+                rejections = int(vote_tally["rejections"] or 0)
+                net_score = approvals - rejections
+
+                # Consensus Decision Logic:
+                # Admin vote immediately approves/rejects, OR net score >= 2 approves, OR net score <= -2 rejects.
+                if user_role == "admin" and vote_clean == "APPROVE":
+                    new_status = "APPROVED"
+                elif user_role == "admin" and vote_clean == "REJECT":
+                    new_status = "REJECTED"
+                elif net_score >= 2:
+                    new_status = "APPROVED"
+                elif net_score <= -2:
+                    new_status = "REJECTED"
+
+                if new_status != "PENDING":
+                    cur.execute(
+                        "UPDATE relationships SET curation_status = %s WHERE id = %s",
+                        (new_status, UUID(rel_id))
+                    )
+
+        # 3. If consensus reached APPROVED, sync to Neo4j graph!
+        if new_status == "APPROVED":
+            try:
+                with conn.cursor(row_factory=dict_row) as cur:
+                    cur.execute(
+                        "SELECT source_entity_id, target_entity_id, relationship_type, confidence_score, source_type FROM relationships WHERE id = %s",
+                        (UUID(rel_id),)
+                    )
+                    rel_row = cur.fetchone()
+                    if rel_row:
+                        cur.execute("SELECT canonical_id, name, entity_type FROM normalized_entities WHERE id = %s", (rel_row["source_entity_id"],))
+                        src_ent = cur.fetchone()
+                        cur.execute("SELECT canonical_id, name, entity_type FROM normalized_entities WHERE id = %s", (rel_row["target_entity_id"],))
+                        tgt_ent = cur.fetchone()
+                        if src_ent and tgt_ent:
+                            neo4j_client.bulk_upsert_edges(
+                                rel_type=rel_row["relationship_type"],
+                                edges=[{
+                                    "id": str(rel_id),
+                                    "source_canonical_id": src_ent["canonical_id"],
+                                    "target_canonical_id": tgt_ent["canonical_id"],
+                                    "confidence_score": rel_row["confidence_score"],
+                                    "curation_status": "APPROVED",
+                                    "source_type": rel_row["source_type"]
+                                }],
+                                source_label="Entity",
+                                target_label="Entity",
+                                source_key="canonical_id",
+                                target_key="canonical_id"
+                            )
+            except Exception as neo_err:
+                logger.warning("Failed Neo4j sync on consensus approval: %s", neo_err)
+
+        return {
+            "status": "success",
+            "relationship_id": rel_id,
+            "user_vote": vote_clean,
+            "approvals_count": approvals,
+            "rejections_count": rejections,
+            "net_score": net_score,
+            "curation_status": new_status,
+            "consensus_reached": new_status != "PENDING"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Curation vote transaction failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Vote submission failed: {str(e)}")
 
 @router.post("/curation/action")
 async def curation_action(
