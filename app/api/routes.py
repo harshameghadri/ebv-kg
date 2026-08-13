@@ -477,24 +477,24 @@ async def curation_pending(
         
     results = []
     for row in rows:
-        approvals = int(row["approvals_count"] or 0)
-        rejections = int(row["rejections_count"] or 0)
+        approvals = int(row.get("approvals_count") or 0)
+        rejections = int(row.get("rejections_count") or 0)
         net_score = approvals - rejections
         results.append({
-            "relationship_id": str(row["relationship_id"]),
-            "source_canonical_id": row["source_canonical_id"],
-            "source_name": row["source_name"],
-            "source_entity_type": row["source_entity_type"] or "GENE",
-            "target_canonical_id": row["target_canonical_id"],
-            "target_name": row["target_name"],
-            "target_entity_type": row["target_entity_type"] or "GENE",
-            "relationship_type": row["relationship_type"],
-            "confidence_score": float(row["confidence_score"] or 0.75),
-            "citation_text": row["citation_text"] or "Literature co-occurrence evidence",
+            "relationship_id": str(row.get("relationship_id") or ""),
+            "source_canonical_id": row.get("source_canonical_id") or "",
+            "source_name": row.get("source_name") or "",
+            "source_entity_type": row.get("source_entity_type") or "GENE",
+            "target_canonical_id": row.get("target_canonical_id") or "",
+            "target_name": row.get("target_name") or "",
+            "target_entity_type": row.get("target_entity_type") or "GENE",
+            "relationship_type": row.get("relationship_type") or "",
+            "confidence_score": float(row.get("confidence_score") or 0.75),
+            "citation_text": row.get("citation_text") or "Literature co-occurrence evidence",
             "approvals_count": approvals,
             "rejections_count": rejections,
             "net_score": net_score,
-            "user_vote": row["user_vote"]
+            "user_vote": row.get("user_vote")
         })
     return results
 
