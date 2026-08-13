@@ -126,7 +126,6 @@
             margin-right: 4px;
         }
 
-        /* Theme Selector & Auth Header Controls */
         .header-controls {
             display: flex;
             align-items: center;
@@ -159,11 +158,9 @@
             gap: 0.4rem;
         }
 
-        .btn-auth:hover {
-            background: var(--brand-blue-hover);
-        }
+        .btn-auth:hover { background: var(--brand-blue-hover); }
 
-        /* --- Search Header & Tab Navigation --- */
+        /* --- Search Header & Navigation --- */
         .search-container {
             background: var(--bg-surface);
             border-bottom: 1px solid var(--border-subtle);
@@ -243,24 +240,61 @@
 
         .btn-search:hover { background: var(--brand-blue-hover); }
 
+        /* Interactive Filter Control Bar */
         .search-controls {
             display: flex;
-            gap: 1.5rem;
+            gap: 2rem;
             max-width: 1600px;
-            margin: 0.75rem auto 0 auto;
+            margin: 1rem auto 0 auto;
             color: var(--text-secondary);
             font-size: 0.85rem;
             align-items: center;
+            flex-wrap: wrap;
+            background: var(--bg-page);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 600;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .range-slider {
+            width: 160px;
+            accent-color: var(--brand-blue);
+            cursor: pointer;
+        }
+
+        .slider-val-badge {
+            background: var(--brand-blue-light);
+            color: var(--brand-blue);
+            font-family: var(--font-mono);
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-strong);
+            font-size: 0.82rem;
         }
 
         .control-select {
             background: var(--bg-surface);
             color: var(--text-primary);
-            border: 1px solid var(--border-subtle);
-            border-radius: 4px;
-            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            padding: 0.3rem 0.6rem;
             font-size: 0.85rem;
             font-weight: 600;
+            cursor: pointer;
         }
 
         /* --- Main Layout Grid --- */
@@ -299,6 +333,8 @@
             color: var(--text-primary);
             border-bottom: 1px solid var(--border-subtle);
             padding-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
 
         .entity-tag {
@@ -322,7 +358,6 @@
         [data-theme="dark"] .tag-disease { background: #831843; color: #FCE7F3; }
         [data-theme="dark"] .tag-cell { background: #064E3B; color: #D1FAE5; }
 
-        /* Triples & Curation Table */
         .curation-table {
             width: 100%;
             border-collapse: collapse;
@@ -365,16 +400,35 @@
             color: var(--text-muted);
         }
 
-        /* --- Graph Canvas --- */
+        /* --- Graph Canvas & Interactive Toolbar --- */
+        .graph-toolbar {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .graph-btn {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-strong);
+            border-radius: 4px;
+            padding: 0.25rem 0.55rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .graph-btn:hover { background: var(--brand-blue-light); color: var(--brand-blue); border-color: var(--brand-blue); }
+
         #cy, #cy-explorer {
             width: 100%;
-            height: 480px;
+            height: 520px;
             background: var(--bg-page);
             border-radius: 6px;
             border: 1px solid var(--border-subtle);
+            position: relative;
         }
 
-        /* Inspector Drawer */
         .inspector-panel {
             margin-top: 1rem;
             background: var(--bg-page);
@@ -382,18 +436,66 @@
             border-radius: 6px;
             padding: 0.75rem 1rem;
             display: none;
-        }
-
-        /* Citations list */
-        .citation-item {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--border-subtle);
             font-size: 0.85rem;
         }
-        .citation-item a { color: var(--brand-blue); text-decoration: none; font-weight: 600; }
-        .citation-item a:hover { text-decoration: underline; }
 
-        /* Loader Spinner */
+        /* --- Rich Primary Literature Citation Cards --- */
+        .citation-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.85rem;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .citation-card:hover {
+            border-color: var(--brand-blue);
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.08);
+        }
+
+        .citation-title {
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: var(--text-primary);
+            margin-bottom: 0.35rem;
+        }
+
+        .citation-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .citation-excerpt {
+            background: var(--bg-page);
+            border-left: 3px solid var(--brand-blue);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            line-height: 1.5;
+            border-radius: 0 6px 6px 0;
+            margin-top: 0.4rem;
+        }
+
+        .link-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.15rem 0.45rem;
+            background: var(--brand-blue-light);
+            color: var(--brand-blue);
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-decoration: none;
+            font-family: var(--font-mono);
+        }
+        .link-badge:hover { text-decoration: underline; background: var(--brand-blue); color: #FFFFFF; }
+
         .loading-spinner {
             display: none;
             width: 32px;
@@ -406,7 +508,6 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- Modal Styling --- */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -437,10 +538,7 @@
             align-items: center;
         }
 
-        .modal-form-group {
-            margin-bottom: 1rem;
-        }
-
+        .modal-form-group { margin-bottom: 1rem; }
         .modal-form-group label {
             display: block;
             font-size: 0.8rem;
@@ -504,7 +602,6 @@
                 <option value="dark">🌙 Dark Mode</option>
                 <option value="system">💻 System Theme</option>
             </select>
-            <!-- Auth Login / Logout Button -->
             <div id="auth-header-area">
                 <button class="btn-auth" onclick="openAuthModal()">🔑 Sign In / Curator</button>
             </div>
@@ -523,25 +620,34 @@
         <div class="search-box-row">
             <input type="text" id="query-input" class="search-input" placeholder="Ask EBV biological questions (e.g. How does EBNA1 bind oriP to initiate replication?)" oninput="handleAutocomplete(this.value)" autocomplete="off">
             <button class="btn-search" onclick="runGraphRAG()">Search Knowledge Base</button>
-            <!-- Autocomplete suggestions dropdown -->
             <div id="autocomplete-list" style="display:none; position:absolute; top: 100%; left:0; right: 140px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 6px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 100;"></div>
         </div>
 
+        <!-- Dynamic Evidence Filter Controls -->
         <div class="search-controls">
-            <div>Mode: <b>Dense Vector + Neo4j Subgraph Pruning</b></div>
-            <div>Max Hops: 
+            <div class="filter-group">
+                <span>Mode:</span>
+                <span style="color: var(--brand-blue); font-weight:700;">Dense Vector + Subgraph Pruning</span>
+            </div>
+            
+            <div class="filter-group">
+                <span>Max Hops:</span>
                 <select id="hop-select" class="control-select">
                     <option value="1">1 Hop</option>
                     <option value="2" selected>2 Hops</option>
                     <option value="3">3 Hops</option>
                 </select>
             </div>
-            <div>Min Edge Confidence: 
-                <select id="conf-select" class="control-select">
-                    <option value="0.70">0.70 (High)</option>
-                    <option value="0.80" selected>0.80 (Strict)</option>
-                    <option value="0.90">0.90 (Gold Standard)</option>
-                </select>
+
+            <!-- Continuous Interactive Slider for Edge Confidence -->
+            <div class="filter-group slider-container">
+                <span>Min Edge Confidence:</span>
+                <input type="range" id="conf-slider" class="range-slider" min="0.50" max="0.99" step="0.01" value="0.75" oninput="handleConfidenceSliderChange(this.value)">
+                <span id="conf-val-badge" class="slider-val-badge">≥ 0.75</span>
+            </div>
+
+            <div style="margin-left: auto; font-size: 0.78rem; color: var(--text-muted);">
+                💡 Drag slider to filter graph & citations dynamically in real time
             </div>
         </div>
     </div>
@@ -567,7 +673,10 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">🧬 Pruned Fact Triples (Knowledge Subgraph)</div>
+                        <div class="card-header">
+                            <span>🧬 Pruned Fact Triples (Knowledge Subgraph)</span>
+                            <span id="triples-count-badge" class="slider-val-badge">0 facts</span>
+                        </div>
                         <table class="curation-table">
                             <thead>
                                 <tr>
@@ -584,27 +693,43 @@
                     </div>
                 </div>
 
-                <!-- Right: Cytoscape Subgraph & Citations -->
+                <!-- Right: Cytoscape Subgraph & Primary Literature Citations -->
                 <div style="display: flex; flex-direction: column; gap: 1.5rem;">
                     <div class="card">
                         <div class="card-header">
-                            <span>🌐 Interactive Subgraph Network</span>
-                            <div>
-                                <button class="control-select" onclick="changeGraphLayout('cose')">COSE</button>
-                                <button class="control-select" onclick="changeGraphLayout('concentric')">Concentric</button>
-                                <button class="control-select" onclick="fitGraph()">Fit View</button>
+                            <span>🌐 Subnetwork Topology Canvas</span>
+                            <div class="graph-toolbar">
+                                <button class="graph-btn" onclick="zoomInGraph()" title="Zoom In">➕ Zoom In</button>
+                                <button class="graph-btn" onclick="zoomOutGraph()" title="Zoom Out">➖ Zoom Out</button>
+                                <button class="graph-btn" onclick="fitGraph()" title="Fit Graph View">🔍 Fit View</button>
+                                <button class="graph-btn" onclick="focusSelectedNode()" title="Focus Selected Node">🎯 Focus Node</button>
+                                <select class="control-select" onchange="changeGraphLayout(this.value)">
+                                    <option value="cose">COSE Force</option>
+                                    <option value="concentric">Concentric</option>
+                                    <option value="circle">Circle</option>
+                                    <option value="grid">Grid</option>
+                                </select>
                             </div>
                         </div>
                         <div id="cy"></div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem; display:flex; justify-content:space-between;">
+                            <span>💡 <b>Interactive StringDB Mode:</b> Scroll/pinch to zoom • Single-click to inspect • Double-click node to focus neighborhood</span>
+                            <span id="graph-node-edge-count">0 nodes | 0 edges</span>
+                        </div>
                         <div id="inspector-panel" class="inspector-panel">
                             <b id="inspector-title">Selected Entity</b> | Type: <span id="inspector-type">GENE</span> | ID: <code id="inspector-id">N/A</code>
+                            <div id="inspector-neighbors" style="margin-top:0.4rem; color:var(--text-secondary); font-size:0.8rem;"></div>
                         </div>
                     </div>
 
+                    <!-- Enhanced Primary Literature Citations Card -->
                     <div class="card">
-                        <div class="card-header">📚 Literature Evidence Citations</div>
+                        <div class="card-header">
+                            <span>📚 Primary Literature Evidence Citations</span>
+                            <span id="citations-count-badge" class="slider-val-badge">0 citations</span>
+                        </div>
                         <div id="citations-list">
-                            <div style="color: var(--text-muted);">Citations with character offsets will appear here.</div>
+                            <div style="color: var(--text-muted);">Citations with full PMIDs, DOIs, and text excerpts will appear here after searching.</div>
                         </div>
                     </div>
                 </div>
@@ -625,7 +750,6 @@
                 </div>
 
                 <div id="hypo-loader" class="loading-spinner"></div>
-
                 <div id="hypo-output" class="dashboard-grid" style="display: none;"></div>
             </div>
         </div>
@@ -691,7 +815,6 @@
                 <button id="tab-auth-signup" class="tab-btn" onclick="toggleAuthTab('signup')">Register Curator</button>
             </div>
 
-            <!-- Login Form -->
             <form id="form-auth-login" onsubmit="handleLoginSubmit(event)">
                 <div class="modal-form-group">
                     <label>Email Address</label>
@@ -704,7 +827,6 @@
                 <button type="submit" class="btn-modal-submit">Sign In to Curator System</button>
             </form>
 
-            <!-- Signup Form -->
             <form id="form-auth-signup" onsubmit="handleSignupSubmit(event)" style="display:none;">
                 <div class="modal-form-group">
                     <label>Full Name</label>
@@ -733,8 +855,12 @@
     let cyInstance = null;
     let cyExplorerInstance = null;
     let currentUser = null;
+    let selectedNodeId = null;
 
-    // --- Theme Management (Bright default, Dark, System) ---
+    // Cache current active search response for real-time slider filtering
+    let currentSearchResponse = null;
+
+    // --- Theme Management ---
     function initTheme() {
         const savedTheme = localStorage.getItem('theme_preference') || 'bright';
         document.getElementById('theme-select').value = savedTheme;
@@ -801,13 +927,8 @@
         }
     }
 
-    function openAuthModal() {
-        document.getElementById('auth-modal').style.display = 'flex';
-    }
-
-    function closeAuthModal() {
-        document.getElementById('auth-modal').style.display = 'none';
-    }
+    function openAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
+    function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
 
     function toggleAuthTab(mode) {
         if (mode === 'login') {
@@ -892,7 +1013,6 @@
         fetchCurationData();
     }
 
-    // --- Telemetry Counts ---
     async function loadTelemetry() {
         try {
             const res = await fetch('/api/v1/metrics');
@@ -970,6 +1090,34 @@
         runGraphRAG();
     }
 
+    // --- REQUIREMENT 2: DYNAMIC EVIDENCE SLIDER FILTERING ---
+    function handleConfidenceSliderChange(valVal) {
+        const threshold = parseFloat(valVal);
+        document.getElementById('conf-val-badge').innerText = `≥ ${threshold.toFixed(2)}`;
+        
+        if (currentSearchResponse) {
+            filterActiveDataByConfidence(threshold);
+        }
+    }
+
+    function filterActiveDataByConfidence(threshold) {
+        if (!currentSearchResponse) return;
+
+        // 1. Filter Pruned Fact Triples
+        const allFacts = currentSearchResponse.pruned_facts || [];
+        const filteredFacts = allFacts.filter(f => (f.confidence || 0.85) >= threshold);
+        
+        renderTriplesTable(filteredFacts);
+
+        // 2. Filter Subnetwork Graph
+        renderCytoscapeGraph(filteredFacts);
+
+        // 3. Filter Literature Citations
+        const allCitations = currentSearchResponse.citations || [];
+        const filteredCitations = allCitations.filter(c => (c.score || 0.85) >= threshold);
+        renderCitationsList(filteredCitations);
+    }
+
     async function runGraphRAG() {
         const query = document.getElementById('query-input').value.trim();
         if (!query) return;
@@ -980,6 +1128,8 @@
         loader.style.display = 'block';
         content.style.opacity = '0.4';
 
+        const minConf = parseFloat(document.getElementById('conf-slider').value);
+
         try {
             const res = await fetch('/api/v1/search', {
                 method: 'POST',
@@ -988,11 +1138,14 @@
                     query_text: query,
                     top_k_chunks: 5,
                     max_graph_hops: parseInt(document.getElementById('hop-select').value),
-                    min_edge_confidence: parseFloat(document.getElementById('conf-select').value)
+                    min_edge_confidence: minConf,
+                    include_citations: true
                 })
             });
 
             const data = await res.json();
+            currentSearchResponse = data;
+
             loader.style.display = 'none';
             content.style.opacity = '1';
 
@@ -1000,34 +1153,8 @@
             document.getElementById('answer-text').innerHTML = data.synthesized_answer || "No synthesis produced.";
             document.getElementById('answer-confidence').innerText = `Confidence: ${((data.confidence_score || 0.85) * 100).toFixed(1)}%`;
 
-            // Triples Table
-            const tbody = document.getElementById('triples-tbody');
-            tbody.innerHTML = '';
-            (data.pruned_facts || []).forEach(fact => {
-                const sType = (fact.subject_type || 'GENE').toLowerCase();
-                const oType = (fact.object_type || 'CELL_STATE').toLowerCase();
-                tbody.innerHTML += `
-                    <tr>
-                        <td><span class="entity-tag tag-${sType}" onclick="openExplorerForSymbol('${fact.subject}')">${fact.subject}</span></td>
-                        <td style="color: var(--text-secondary);">${fact.predicate}</td>
-                        <td><span class="entity-tag tag-${oType}" onclick="openExplorerForSymbol('${fact.object}')">${fact.object}</span></td>
-                        <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">${(fact.confidence || 0.9).toFixed(2)}</td>
-                    </tr>`;
-            });
-
-            // Citations
-            const citeContainer = document.getElementById('citations-list');
-            citeContainer.innerHTML = '';
-            (data.citations || []).forEach(cite => {
-                const pmidUrl = cite.pmid ? `https://pubmed.ncbi.nlm.org/${cite.pmid}` : '#';
-                citeContainer.innerHTML += `
-                    <div class="citation-item">
-                        <a href="${pmidUrl}" target="_blank">📄 PMID:${cite.pmid || 'N/A'}</a> | ${cite.title || 'Primary Literature Document'}
-                    </div>`;
-            });
-
-            // Render Cytoscape Graph
-            renderCytoscapeGraph(data.pruned_facts || []);
+            // Filter data according to current slider value
+            filterActiveDataByConfidence(minConf);
 
         } catch (err) {
             loader.style.display = 'none';
@@ -1035,6 +1162,31 @@
         }
     }
 
+    function renderTriplesTable(facts) {
+        const tbody = document.getElementById('triples-tbody');
+        const badge = document.getElementById('triples-count-badge');
+        badge.innerText = `${facts.length} facts`;
+
+        tbody.innerHTML = '';
+        if (facts.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted); padding:0.75rem;">No fact triples above the current confidence threshold.</td></tr>`;
+            return;
+        }
+
+        facts.forEach(fact => {
+            const sType = (fact.subject_type || 'GENE').toLowerCase();
+            const oType = (fact.object_type || 'CELL_STATE').toLowerCase();
+            tbody.innerHTML += `
+                <tr>
+                    <td><span class="entity-tag tag-${sType}" onclick="openExplorerForSymbol('${fact.subject}')">${fact.subject}</span></td>
+                    <td style="color: var(--text-secondary); font-weight:600;">${fact.predicate}</td>
+                    <td><span class="entity-tag tag-${oType}" onclick="openExplorerForSymbol('${fact.object}')">${fact.object}</span></td>
+                    <td style="font-family: var(--font-mono); color: var(--accent-emerald); font-weight:700;">${(fact.confidence || 0.9).toFixed(2)}</td>
+                </tr>`;
+        });
+    }
+
+    // --- REQUIREMENT 1: STRINGDB-STYLE SUBNETWORK TOPOLOGY CANVAS ---
     function renderCytoscapeGraph(facts) {
         const nodesMap = new Map();
         const edges = [];
@@ -1047,18 +1199,26 @@
                 nodesMap.set(fact.object, { id: fact.object, label: fact.object, type: fact.object_type || 'CELL_STATE' });
             }
             edges.push({
-                data: { id: `e${idx}`, source: fact.subject, target: fact.object, label: fact.predicate }
+                data: { id: `e${idx}`, source: fact.subject, target: fact.object, label: fact.predicate, confidence: fact.confidence }
             });
         });
 
+        const nodeArray = Array.from(nodesMap.values());
+        document.getElementById('graph-node-edge-count').innerText = `${nodeArray.length} nodes | ${edges.length} edges`;
+
         const elements = [
-            ...Array.from(nodesMap.values()).map(n => ({ data: n })),
+            ...nodeArray.map(n => ({ data: n })),
             ...edges
         ];
 
         cyInstance = cytoscape({
             container: document.getElementById('cy'),
             elements: elements,
+            userZoomingEnabled: true,
+            userPanningEnabled: true,
+            boxSelectionEnabled: true,
+            autounselectify: false,
+            wheelSensitivity: 0.2,
             style: [
                 {
                     selector: 'node',
@@ -1073,10 +1233,22 @@
                             if (type === 'CELL_STATE') return '#047857';
                             return '#B45309';
                         },
-                        'font-size': '11px',
+                        'font-size': '12px',
+                        'font-weight': 'bold',
                         'font-family': 'Inter, sans-serif',
                         'text-valign': 'bottom',
-                        'text-margin-y': 4
+                        'text-margin-y': 4,
+                        'border-width': 2,
+                        'border-color': 'var(--border-strong)'
+                    }
+                },
+                {
+                    selector: 'node:selected',
+                    style: {
+                        'border-width': 4,
+                        'border-color': '#3B82F6',
+                        'shadow-blur': 12,
+                        'shadow-color': '#3B82F6'
                     }
                 },
                 {
@@ -1093,20 +1265,100 @@
                     }
                 }
             ],
-            layout: { name: 'cose', animate: true }
+            layout: { name: 'cose', animate: true, padding: 40 }
         });
 
+        // StringDB Single Tap: Inspect & Highlight
         cyInstance.on('tap', 'node', function(evt){
             const node = evt.target;
+            selectedNodeId = node.id();
             const panel = document.getElementById('inspector-panel');
             panel.style.display = 'block';
             document.getElementById('inspector-title').innerText = `Selected Entity: ${node.data('label')}`;
             document.getElementById('inspector-type').innerText = node.data('type') || 'GENE';
             document.getElementById('inspector-id').innerText = node.data('id');
+
+            // Find neighbors
+            const connectedEdges = node.connectedEdges();
+            const neighborNames = node.neighborhood().nodes().map(n => n.data('label')).join(', ');
+            document.getElementById('inspector-neighbors').innerHTML = `<b>Degree:</b> ${connectedEdges.length} connections | <b>Neighbors:</b> ${neighborNames || 'None'}`;
+        });
+
+        // StringDB Double Tap: Focus Zoom onto Node Neighborhood
+        cyInstance.on('dbltap', 'node', function(evt){
+            const node = evt.target;
+            const neighborhood = node.neighborhood().add(node);
+            cyInstance.animate({
+                fit: { eles: neighborhood, padding: 60 },
+                duration: 500
+            });
         });
     }
 
-    // --- REQUIREMENT 2: GRAPH EXPLORER IMPLEMENTATION ---
+    function zoomInGraph() {
+        if (cyInstance) cyInstance.zoom({ level: cyInstance.zoom() * 1.3, renderedPosition: { x: cyInstance.width()/2, y: cyInstance.height()/2 } });
+    }
+
+    function zoomOutGraph() {
+        if (cyInstance) cyInstance.zoom({ level: cyInstance.zoom() * 0.75, renderedPosition: { x: cyInstance.width()/2, y: cyInstance.height()/2 } });
+    }
+
+    function fitGraph() {
+        if (cyInstance) cyInstance.fit();
+    }
+
+    function focusSelectedNode() {
+        if (cyInstance && selectedNodeId) {
+            const node = cyInstance.getElementById(selectedNodeId);
+            if (node) {
+                const neighborhood = node.neighborhood().add(node);
+                cyInstance.animate({
+                    fit: { eles: neighborhood, padding: 60 },
+                    duration: 500
+                });
+            }
+        } else if (cyInstance) {
+            cyInstance.fit();
+        }
+    }
+
+    function changeGraphLayout(layoutName) {
+        if (cyInstance) cyInstance.layout({ name: layoutName, animate: true, padding: 40 }).run();
+    }
+
+    // --- REQUIREMENT 2: RICH PRIMARY LITERATURE CITATIONS ---
+    function renderCitationsList(citations) {
+        const citeContainer = document.getElementById('citations-list');
+        const badge = document.getElementById('citations-count-badge');
+        badge.innerText = `${citations.length} citations`;
+
+        citeContainer.innerHTML = '';
+        if (citations.length === 0) {
+            citeContainer.innerHTML = `<div style="color: var(--text-muted); padding:0.5rem;">No primary literature citations found above the confidence threshold.</div>`;
+            return;
+        }
+
+        citations.forEach(cite => {
+            const pmidStr = cite.pmid ? `PMID:${cite.pmid}` : 'PMC Literature Document';
+            const pmidUrl = cite.pmid ? `https://pubmed.ncbi.nlm.org/${cite.pmid}` : '#';
+            const doiUrl = cite.doi ? `https://doi.org/${cite.doi}` : null;
+            const scorePct = ((cite.score || 0.85) * 100).toFixed(1);
+
+            citeContainer.innerHTML += `
+                <div class="citation-card">
+                    <div class="citation-title">${cite.title || 'Primary Research Article'}</div>
+                    <div class="citation-meta">
+                        <span>🏛️ <b>${cite.journal || 'Journal of Virology'}</b> (${cite.published_date || '2024'})</span>
+                        <a href="${pmidUrl}" target="_blank" class="link-badge">📄 ${pmidStr} ↗</a>
+                        ${doiUrl ? `<a href="${doiUrl}" target="_blank" class="link-badge">🔗 DOI:${cite.doi} ↗</a>` : ''}
+                        <span style="margin-left:auto; color:var(--accent-emerald); font-weight:700; font-family:var(--font-mono); font-size:0.75rem;">Match: ${scorePct}%</span>
+                    </div>
+                    ${cite.excerpt ? `<div class="citation-excerpt">💬 "${cite.excerpt}"</div>` : ''}
+                </div>`;
+        });
+    }
+
+    // --- GRAPH EXPLORER ---
     async function exploreEntity() {
         const inputVal = document.getElementById('explorer-input').value.trim() || 'LMP1';
         const loader = document.getElementById('explorer-loader');
@@ -1122,7 +1374,6 @@
             const rels = data.relationships || [];
 
             statsSpan.innerText = `Neighborhood: ${nodes.length} nodes, ${rels.length} edges`;
-
             renderExplorerCytoscape(nodes, rels);
         } catch(err) {
             loader.style.display = 'none';
@@ -1135,28 +1386,23 @@
 
         nodes.forEach(n => {
             elements.push({
-                data: {
-                    id: n.id,
-                    label: n.name || n.id,
-                    type: n.entity_type || n.label || 'GENE'
-                }
+                data: { id: n.id, label: n.name || n.id, type: n.entity_type || n.label || 'GENE' }
             });
         });
 
         rels.forEach((r, idx) => {
             elements.push({
-                data: {
-                    id: r.id || `relexp_${idx}`,
-                    source: r.source,
-                    target: r.target,
-                    label: r.type || 'ASSOCIATED_WITH'
-                }
+                data: { id: r.id || `relexp_${idx}`, source: r.source, target: r.target, label: r.type || 'ASSOCIATED_WITH' }
             });
         });
 
         cyExplorerInstance = cytoscape({
             container: document.getElementById('cy-explorer'),
             elements: elements,
+            userZoomingEnabled: true,
+            userPanningEnabled: true,
+            boxSelectionEnabled: true,
+            wheelSensitivity: 0.2,
             style: [
                 {
                     selector: 'node',
@@ -1172,10 +1418,13 @@
                             if (type === 'Paper') return '#475569';
                             return '#B45309';
                         },
-                        'font-size': '11px',
+                        'font-size': '12px',
+                        'font-weight': 'bold',
                         'font-family': 'Inter, sans-serif',
                         'text-valign': 'bottom',
-                        'text-margin-y': 4
+                        'text-margin-y': 4,
+                        'border-width': 2,
+                        'border-color': 'var(--border-strong)'
                     }
                 },
                 {
@@ -1192,7 +1441,7 @@
                     }
                 }
             ],
-            layout: { name: 'cose', animate: true }
+            layout: { name: 'cose', animate: true, padding: 40 }
         });
 
         cyExplorerInstance.on('tap', 'node', function(evt){
@@ -1203,14 +1452,6 @@
             document.getElementById('exp-inspector-type').innerText = node.data('type') || 'GENE';
             document.getElementById('exp-inspector-id').innerText = node.data('id');
         });
-    }
-
-    function changeGraphLayout(layoutName) {
-        if (cyInstance) cyInstance.layout({ name: layoutName, animate: true }).run();
-    }
-
-    function fitGraph() {
-        if (cyInstance) cyInstance.fit();
     }
 
     async function runHypothesisDiscovery() {
@@ -1250,7 +1491,7 @@
         }
     }
 
-    // --- REQUIREMENT 3 & 4: DYNAMIC HUMAN CURATION & CONSENSUS VOTING ---
+    // --- DYNAMIC HUMAN CURATION ---
     async function fetchCurationData() {
         const tbody = document.getElementById('curation-tbody');
         tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted); padding:1rem;">Loading pending curation edges from PostgreSQL...</td></tr>`;
