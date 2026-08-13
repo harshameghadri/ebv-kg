@@ -194,6 +194,17 @@ class ClaudeSynthesisClient:
             parsed = json.loads(json_match.group(0))
             answer = parsed.get("answer", "I do not know")
             
+            # Ensure answer is clean prose text, not a raw JSON string or object
+            if isinstance(answer, dict):
+                answer = answer.get("answer", str(answer))
+            if isinstance(answer, str) and answer.strip().startswith("{") and "answer" in answer:
+                try:
+                    inner = json.loads(answer.strip())
+                    if isinstance(inner, dict) and "answer" in inner:
+                        answer = inner["answer"]
+                except Exception:
+                    pass
+
             # Confidence
             confidence = parsed.get("confidence", 0.0)
             try:

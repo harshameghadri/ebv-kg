@@ -400,7 +400,7 @@
             color: var(--text-muted);
         }
 
-        /* --- Graph Canvas & Interactive Toolbar --- */
+        /* --- Graph Canvas --- */
         .graph-toolbar {
             display: flex;
             gap: 0.4rem;
@@ -495,6 +495,18 @@
             font-family: var(--font-mono);
         }
         .link-badge:hover { text-decoration: underline; background: var(--brand-blue); color: #FFFFFF; }
+
+        .cite-num-tag {
+            display: inline-block;
+            background: var(--brand-blue-light);
+            color: var(--brand-blue);
+            font-weight: 800;
+            border-radius: 4px;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.78rem;
+            font-family: var(--font-mono);
+            margin: 0 0.15rem;
+        }
 
         .loading-spinner {
             display: none;
@@ -618,7 +630,7 @@
         </div>
 
         <div class="search-box-row">
-            <input type="text" id="query-input" class="search-input" placeholder="Ask EBV biological questions (e.g. How does EBNA1 bind oriP to initiate replication?)" oninput="handleAutocomplete(this.value)" autocomplete="off">
+            <input type="text" id="query-input" class="search-input" placeholder="Ask EBV biological questions (e.g. EBER1 ncRNA role in TLR3 pathway or EBNA1 binding to oriP)" oninput="handleAutocomplete(this.value)" autocomplete="off">
             <button class="btn-search" onclick="runGraphRAG()">Search Knowledge Base</button>
             <div id="autocomplete-list" style="display:none; position:absolute; top: 100%; left:0; right: 140px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 6px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 100;"></div>
         </div>
@@ -626,10 +638,14 @@
         <!-- Dynamic Evidence Filter Controls -->
         <div class="search-controls">
             <div class="filter-group">
-                <span>Mode:</span>
-                <span style="color: var(--brand-blue); font-weight:700;">Dense Vector + Subgraph Pruning</span>
+                <span>Retrieval Depth:</span>
+                <select id="depth-select" class="control-select">
+                    <option value="5">5 chunks</option>
+                    <option value="15" selected>15 chunks (Deep)</option>
+                    <option value="25">25 chunks (Comprehensive)</option>
+                </select>
             </div>
-            
+
             <div class="filter-group">
                 <span>Max Hops:</span>
                 <select id="hop-select" class="control-select">
@@ -667,7 +683,7 @@
                             <span>🤖 LLM Synthesized Scientific Insight</span>
                             <span id="answer-confidence" style="font-size: 0.8rem; color: var(--accent-emerald); font-weight:700;">Confidence: 94.5%</span>
                         </div>
-                        <div id="answer-text" style="line-height: 1.6; color: var(--text-primary); font-size: 0.95rem;">
+                        <div id="answer-text" style="line-height: 1.7; color: var(--text-primary); font-size: 0.95rem;">
                             Enter a search query above to execute vector retrieval and subgraph pruning across 13,301 PMC articles and 30M SPOKE relationships.
                         </div>
                     </div>
@@ -713,7 +729,6 @@
                         </div>
                         <div id="cy"></div>
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem; display:flex; justify-content:space-between;">
-                            <span>💡 <b>Interactive StringDB Mode:</b> Scroll/pinch to zoom • Single-click to inspect • Double-click node to focus neighborhood</span>
                             <span id="graph-node-edge-count">0 nodes | 0 edges</span>
                         </div>
                         <div id="inspector-panel" class="inspector-panel">
@@ -856,8 +871,6 @@
     let cyExplorerInstance = null;
     let currentUser = null;
     let selectedNodeId = null;
-
-    // Cache current active search response for real-time slider filtering
     let currentSearchResponse = null;
 
     // --- Theme Management ---
@@ -883,20 +896,13 @@
     }
 
     // --- Auth Management ---
-    function getSessionToken() {
-        return localStorage.getItem('ebv_session_token');
-    }
+    function getSessionToken() { return localStorage.getItem('ebv_session_token'); }
 
     async function checkAuthSession() {
         const token = getSessionToken();
-        if (!token) {
-            updateAuthHeader(null);
-            return;
-        }
+        if (!token) { updateAuthHeader(null); return; }
         try {
-            const res = await fetch('/api/v1/auth/me', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch('/api/v1/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) {
                 const data = await res.json();
                 currentUser = data.user;
@@ -906,9 +912,7 @@
                 currentUser = null;
                 updateAuthHeader(null);
             }
-        } catch(e) {
-            updateAuthHeader(null);
-        }
+        } catch(e) { updateAuthHeader(null); }
     }
 
     function updateAuthHeader(user) {
@@ -1090,11 +1094,9 @@
         runGraphRAG();
     }
 
-    // --- REQUIREMENT 2: DYNAMIC EVIDENCE SLIDER FILTERING ---
     function handleConfidenceSliderChange(valVal) {
         const threshold = parseFloat(valVal);
         document.getElementById('conf-val-badge').innerText = `≥ ${threshold.toFixed(2)}`;
-        
         if (currentSearchResponse) {
             filterActiveDataByConfidence(threshold);
         }
@@ -1103,16 +1105,11 @@
     function filterActiveDataByConfidence(threshold) {
         if (!currentSearchResponse) return;
 
-        // 1. Filter Pruned Fact Triples
         const allFacts = currentSearchResponse.pruned_facts || [];
         const filteredFacts = allFacts.filter(f => (f.confidence || 0.85) >= threshold);
-        
         renderTriplesTable(filteredFacts);
-
-        // 2. Filter Subnetwork Graph
         renderCytoscapeGraph(filteredFacts);
 
-        // 3. Filter Literature Citations
         const allCitations = currentSearchResponse.citations || [];
         const filteredCitations = allCitations.filter(c => (c.score || 0.85) >= threshold);
         renderCitationsList(filteredCitations);
@@ -1129,6 +1126,7 @@
         content.style.opacity = '0.4';
 
         const minConf = parseFloat(document.getElementById('conf-slider').value);
+        const topK = parseInt(document.getElementById('depth-select').value);
 
         try {
             const res = await fetch('/api/v1/search', {
@@ -1136,7 +1134,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     query_text: query,
-                    top_k_chunks: 5,
+                    top_k_chunks: topK,
                     max_graph_hops: parseInt(document.getElementById('hop-select').value),
                     min_edge_confidence: minConf,
                     include_citations: true
@@ -1149,11 +1147,25 @@
             loader.style.display = 'none';
             content.style.opacity = '1';
 
-            // Synthesized Answer & Confidence
-            document.getElementById('answer-text').innerHTML = data.synthesized_answer || "No synthesis produced.";
-            document.getElementById('answer-confidence').innerText = `Confidence: ${((data.confidence_score || 0.85) * 100).toFixed(1)}%`;
+            // Clean & Render Synthesized Answer safely
+            let rawAnswer = data.synthesized_answer || data.answer || "No synthesis produced.";
+            if (typeof rawAnswer === 'object') {
+                rawAnswer = rawAnswer.answer || JSON.stringify(rawAnswer);
+            }
+            if (typeof rawAnswer === 'string' && rawAnswer.trim().startsWith('{')) {
+                try {
+                    const parsedObj = JSON.parse(rawAnswer.trim());
+                    if (parsedObj.answer) rawAnswer = parsedObj.answer;
+                } catch(e) {}
+            }
 
-            // Filter data according to current slider value
+            // Convert numeric citations [1], [2] to styled badges
+            let formattedText = rawAnswer.replace(/\n/g, '<br>')
+                                         .replace(/\[(\d+)\]/g, '<span class="cite-num-tag">[$1]</span>');
+            
+            document.getElementById('answer-text').innerHTML = formattedText;
+            document.getElementById('answer-confidence').innerText = `Confidence: ${((data.confidence_score || data.confidence || 0.85) * 100).toFixed(1)}%`;
+
             filterActiveDataByConfidence(minConf);
 
         } catch (err) {
@@ -1186,7 +1198,6 @@
         });
     }
 
-    // --- REQUIREMENT 1: STRINGDB-STYLE SUBNETWORK TOPOLOGY CANVAS ---
     function renderCytoscapeGraph(facts) {
         const nodesMap = new Map();
         const edges = [];
@@ -1268,7 +1279,6 @@
             layout: { name: 'cose', animate: true, padding: 40 }
         });
 
-        // StringDB Single Tap: Inspect & Highlight
         cyInstance.on('tap', 'node', function(evt){
             const node = evt.target;
             selectedNodeId = node.id();
@@ -1278,13 +1288,11 @@
             document.getElementById('inspector-type').innerText = node.data('type') || 'GENE';
             document.getElementById('inspector-id').innerText = node.data('id');
 
-            // Find neighbors
             const connectedEdges = node.connectedEdges();
             const neighborNames = node.neighborhood().nodes().map(n => n.data('label')).join(', ');
             document.getElementById('inspector-neighbors').innerHTML = `<b>Degree:</b> ${connectedEdges.length} connections | <b>Neighbors:</b> ${neighborNames || 'None'}`;
         });
 
-        // StringDB Double Tap: Focus Zoom onto Node Neighborhood
         cyInstance.on('dbltap', 'node', function(evt){
             const node = evt.target;
             const neighborhood = node.neighborhood().add(node);
@@ -1303,9 +1311,7 @@
         if (cyInstance) cyInstance.zoom({ level: cyInstance.zoom() * 0.75, renderedPosition: { x: cyInstance.width()/2, y: cyInstance.height()/2 } });
     }
 
-    function fitGraph() {
-        if (cyInstance) cyInstance.fit();
-    }
+    function fitGraph() { if (cyInstance) cyInstance.fit(); }
 
     function focusSelectedNode() {
         if (cyInstance && selectedNodeId) {
@@ -1326,7 +1332,6 @@
         if (cyInstance) cyInstance.layout({ name: layoutName, animate: true, padding: 40 }).run();
     }
 
-    // --- REQUIREMENT 2: RICH PRIMARY LITERATURE CITATIONS ---
     function renderCitationsList(citations) {
         const citeContainer = document.getElementById('citations-list');
         const badge = document.getElementById('citations-count-badge');
@@ -1338,15 +1343,19 @@
             return;
         }
 
-        citations.forEach(cite => {
+        citations.forEach((cite, idx) => {
             const pmidStr = cite.pmid ? `PMID:${cite.pmid}` : 'PMC Literature Document';
-            const pmidUrl = cite.pmid ? `https://pubmed.ncbi.nlm.org/${cite.pmid}` : '#';
+            // Correct PubMed URL domain format: https://pubmed.ncbi.nlm.nih.gov/<pmid>/
+            const pmidUrl = cite.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${cite.pmid}/` : '#';
             const doiUrl = cite.doi ? `https://doi.org/${cite.doi}` : null;
             const scorePct = ((cite.score || 0.85) * 100).toFixed(1);
+            const sourceIndex = cite.source_index || (idx + 1);
 
             citeContainer.innerHTML += `
                 <div class="citation-card">
-                    <div class="citation-title">${cite.title || 'Primary Research Article'}</div>
+                    <div class="citation-title">
+                        <span class="cite-num-tag">[${sourceIndex}]</span> ${cite.title || 'Primary Research Article'}
+                    </div>
                     <div class="citation-meta">
                         <span>🏛️ <b>${cite.journal || 'Journal of Virology'}</b> (${cite.published_date || '2024'})</span>
                         <a href="${pmidUrl}" target="_blank" class="link-badge">📄 ${pmidStr} ↗</a>
