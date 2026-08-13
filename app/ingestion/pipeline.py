@@ -83,6 +83,20 @@ class ETLPipeline:
         processed_docs_count = 0
         processed_doc_ids = []
 
+        # Fetch existing PMIDs and DOIs from PostgreSQL to skip already-ingested papers
+        existing_pmids = set()
+        existing_dois = set()
+        try:
+            with pg_conn.cursor() as cur:
+                cur.execute("SELECT pmid, doi FROM documents WHERE pmid IS NOT NULL OR doi IS NOT NULL")
+                for pmid_val, doi_val in cur.fetchall():
+                    if pmid_val:
+                        existing_pmids.add(str(pmid_val).strip())
+                    if doi_val:
+                        existing_dois.add(str(doi_val).strip().lower())
+            logger.info("Found %d existing PMIDs and %d existing DOIs in database.", len(existing_pmids), len(existing_dois))
+        except Exception as e:
+            logger.warning("Could not pre-fetch existing PMIDs/DOIs: %s", e)
 
         try:
             # Collect unique absolute file paths saved by scraper
@@ -109,9 +123,18 @@ class ETLPipeline:
 
             # Parse XML files
             for xml_path in xml_paths:
+                # Fast check by file stem (PMID)
+                if xml_path.stem in existing_pmids:
+                    continue
+
                 logger.info("Parsing JATS XML file: %s", xml_path)
                 try:
                     parsed = pmc_parser.parse(xml_path)
+                    pmid = parsed.get("metadata", {}).get("pmid")
+                    doi = parsed.get("metadata", {}).get("doi")
+                    if (pmid and str(pmid).strip() in existing_pmids) or (doi and str(doi).strip().lower() in existing_dois):
+                        continue
+
                     cnt, did = self._process_parsed_doc(
                         pg_conn, parsed, ner_extractor, entity_mapper
                     )
@@ -125,9 +148,17 @@ class ETLPipeline:
 
             # Parse PDF files
             for pdf_path in pdf_paths:
+                if pdf_path.stem in existing_pmids:
+                    continue
+
                 logger.info("Parsing PDF file: %s", pdf_path)
                 try:
                     parsed = pdf_extractor.parse(pdf_path)
+                    pmid = parsed.get("metadata", {}).get("pmid")
+                    doi = parsed.get("metadata", {}).get("doi")
+                    if (pmid and str(pmid).strip() in existing_pmids) or (doi and str(doi).strip().lower() in existing_dois):
+                        continue
+
                     cnt, did = self._process_parsed_doc(
                         pg_conn, parsed, ner_extractor, entity_mapper
                     )
@@ -140,10 +171,18 @@ class ETLPipeline:
 
             # Parse JSON metadata (abstract fallbacks) files
             for meta_path in metadata_paths:
+                if meta_path.stem in existing_pmids:
+                    continue
+
                 logger.info("Parsing abstract JSON file: %s", meta_path)
                 try:
                     import json
                     meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                    pmid = meta.get("pmid")
+                    doi = meta.get("doi")
+                    if (pmid and str(pmid).strip() in existing_pmids) or (doi and str(doi).strip().lower() in existing_dois):
+                        continue
+
                     text_chunks = meta.get("text_chunks")
                     if not text_chunks and "abstract" in meta and meta["abstract"]:
                         text_chunks = [{"section": "Abstract", "text": meta["abstract"]}]
