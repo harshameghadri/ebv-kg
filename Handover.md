@@ -29,6 +29,11 @@ Refer to [`Incident_Report_And_System_Status.md`](file:///Volumes/Projects/ebv_K
 4. **Literature Relevance Gate (`commit 151b9194`)**: Enforced biological term matching (`RPMS1`, `EBNA1`, `chromatin`) in `app/retrieval/hybrid.py` to eliminate generic stop-words and non-specific antihistamine paper hallucinations.
 5. **EBV Literature Affinity Scoring Engine (ELAS) ([`app/processing/ebv_scorer.py`](file:///Volumes/Projects/ebv_KG/app/processing/ebv_scorer.py))**: Implemented section-weighted scoring ($S_{\text{title}} = 0.40, S_{\text{abstract}} = 0.35, S_{\text{intro}} = 0.25$) and reagent noise penalties.
 6. **HuggingFace Auth Integration (`commit 0fbc23c9`)**: Automatically exports `HF_TOKEN` from `.env` to authenticate HuggingFace API calls.
+7. **Ingestion Pipeline & Materialization Stalls Fix (`commit 731cecd2` & `commit 8ec39dd6`)**:
+   - Resolved 30M-row full table scan in `Materializer.materialize_graph()` by passing `doc_ids=processed_doc_ids` for batch scoping.
+   - Scoped `ETLPipeline` document parsing strictly to scraped files, eliminating staging directory glob re-parsing pollution.
+   - Optimized `EmbeddingsPipeline` LanceDB chunk checking using SQL `where(document_id IN (...))` queries, preventing PyArrow memory spikes.
+   - Defaulted `ENABLE_BERN2=false` and `ENABLE_OLS=false` during bulk ingestion to handle KAIST API outage and eliminate HTTP GET timeout stalls.
 
 ---
 
