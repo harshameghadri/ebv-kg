@@ -366,7 +366,11 @@ class EntityMapper:
                             if curr_conf > prev_conf:
                                 unique_chunk_entities[cid] = ent
 
-                    unique_list = list(unique_chunk_entities.values())
+                    unique_list = sorted(
+                        unique_chunk_entities.values(),
+                        key=lambda e: e["ner_confidence"] * e["resolution_confidence"],
+                        reverse=True
+                    )[:25]
 
                     for ent1, ent2 in itertools.combinations(unique_list, 2):
                         p1 = TYPE_PRIORITY.get(ent1["entity_type"].upper(), 5)

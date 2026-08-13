@@ -366,15 +366,18 @@ class SynonymResolver:
                     }
 
         # 3. Fuzzy match
-        if norm_t:
+        if norm_t and len(norm_t) >= 4:
             best_match = None
             best_score = 0.0
             best_cat = None
+            len_norm = len(norm_t)
 
             for cat in cat_keys:
                 if cat not in self._term_list:
                     continue
                 for dict_norm_t, record in self._term_list[cat]:
+                    if abs(len_norm - len(dict_norm_t)) > 2:
+                        continue
                     score = SequenceMatcher(None, norm_t, dict_norm_t).ratio()
                     if score > best_score:
                         best_score = score
