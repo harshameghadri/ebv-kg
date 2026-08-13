@@ -21,12 +21,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Register API routes (both with /api prefix and root for direct endpoints)
-app.include_router(api_router, prefix="/api")
-app.include_router(hypothesis_router, prefix="/api")
-app.include_router(health_router, prefix="/api")
-app.include_router(auth_router, prefix="/api")
-
+# Register API routers
 app.include_router(api_router)
 app.include_router(hypothesis_router)
 app.include_router(health_router)
