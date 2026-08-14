@@ -166,16 +166,23 @@ async def query_hybrid(
         confidence = 0.8
         citations = []
 
-    # Ensure answer is clean prose text, not a raw JSON object string
-    if isinstance(answer, dict):
-        answer = answer.get("answer", str(answer))
-    if isinstance(answer, str) and answer.strip().startswith("{") and "answer" in answer:
-        try:
-            parsed_ans = json.loads(answer.strip())
-            if isinstance(parsed_ans, dict) and "answer" in parsed_ans:
-                answer = parsed_ans["answer"]
-        except Exception:
-            pass
+    # Recursively unwrap nested JSON strings if answer is enclosed in JSON syntax
+    while isinstance(answer, (dict, str)):
+        if isinstance(answer, dict):
+            answer = answer.get("answer", str(answer))
+            continue
+        cleaned = str(answer).strip()
+        if cleaned.startswith("{") and "answer" in cleaned:
+            try:
+                inner_parsed = json.loads(cleaned)
+                if isinstance(inner_parsed, dict) and "answer" in inner_parsed:
+                    answer = inner_parsed["answer"]
+                else:
+                    break
+            except Exception:
+                break
+        else:
+            break
 
     # Ensure rich primary literature citations are populated from retrieved chunks without duplicates
     seen_pmids = set()

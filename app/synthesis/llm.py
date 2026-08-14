@@ -194,16 +194,23 @@ class ClaudeSynthesisClient:
             parsed = json.loads(json_match.group(0))
             answer = parsed.get("answer", "I do not know")
             
-            # Ensure answer is clean prose text, not a raw JSON string or object
-            if isinstance(answer, dict):
-                answer = answer.get("answer", str(answer))
-            if isinstance(answer, str) and answer.strip().startswith("{") and "answer" in answer:
-                try:
-                    inner = json.loads(answer.strip())
-                    if isinstance(inner, dict) and "answer" in inner:
-                        answer = inner["answer"]
-                except Exception:
-                    pass
+            # Recursively unwrap nested JSON strings if answer is enclosed in JSON syntax
+            while isinstance(answer, (dict, str)):
+                if isinstance(answer, dict):
+                    answer = answer.get("answer", str(answer))
+                    continue
+                cleaned = str(answer).strip()
+                if cleaned.startswith("{") and "answer" in cleaned:
+                    try:
+                        inner_parsed = json.loads(cleaned)
+                        if isinstance(inner_parsed, dict) and "answer" in inner_parsed:
+                            answer = inner_parsed["answer"]
+                        else:
+                            break
+                    except Exception:
+                        break
+                else:
+                    break
 
             # Confidence
             confidence = parsed.get("confidence", 0.0)
