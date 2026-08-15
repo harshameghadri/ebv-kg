@@ -130,7 +130,10 @@ def check_kuzu_health(engine: Any) -> ComponentHealth:
 
 # --- Router Endpoints ---
 
-@router.get("/health", response_model=HealthResponse)
+@router.get("/health")
+@router.get("/api/health")
+@router.get("/v1/health")
+@router.get("/api/v1/health", response_model=HealthResponse)
 def get_health(
     pg_conn: Optional[Any] = Depends(get_pg_conn_safe),
     lancedb_client: Optional[LanceDBClient] = Depends(get_lancedb_client_safe),
@@ -160,7 +163,10 @@ def get_health(
     )
 
 
-@router.get("/metrics", response_model=MetricsResponse)
+@router.get("/metrics")
+@router.get("/api/metrics")
+@router.get("/v1/metrics")
+@router.get("/api/v1/metrics", response_model=MetricsResponse)
 def get_metrics(
     pg_conn: Any = Depends(get_pg_conn),
 ) -> MetricsResponse:

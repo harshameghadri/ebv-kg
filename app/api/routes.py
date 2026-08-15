@@ -1,6 +1,8 @@
 """FastAPI router defining REST API endpoints for the EBV Knowledge System."""
 
 import os
+import re
+import uuid
 import psycopg
 import time
 import logging
@@ -210,6 +212,7 @@ async def query_hybrid(
 
         rich_citations.append({
             "source_index": len(rich_citations) + 1,
+            "chunk_id": c.get("id") or c.get("chunk_id") or f"chunk-{i+1}",
             "pmid": pmid,
             "doi": doi,
             "title": title,
@@ -696,6 +699,7 @@ async def curation_vote(
         raise HTTPException(status_code=500, detail=f"Vote submission failed: {str(e)}")
 
 @router.post("/curation/action")
+@router.post("/api/curation/action")
 async def curation_action(
     req: CurationActionRequest,
     conn = Depends(get_pg_conn),
@@ -865,6 +869,7 @@ async def curation_action(
     return {"status": "success", "curation_status": new_status}
 
 @router.get("/admin/curation-status")
+@router.get("/api/admin/curation-status")
 async def admin_curation_status(conn = Depends(get_pg_conn)):
     """Fetch aggregated statistics (approved, pending, rejected) for relationships in PostgreSQL."""
     query = """

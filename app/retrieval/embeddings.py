@@ -26,7 +26,7 @@ class EmbeddingClient:
                         or 'allenai/specter2' if not specified.
             device: Optional torch device string. If None, auto-detected.
         """
-        self.model_name = model_name or os.getenv("EMBEDDINGS_MODEL", "BAAI/bge-m3")
+        self.model_name = model_name or os.getenv("EMBEDDINGS_MODEL", "allenai/specter2")
         self._device = device
         self._model = None
         self._flag_model = None

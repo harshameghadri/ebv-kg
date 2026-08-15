@@ -1,5 +1,3 @@
-"""Main FastAPI application entrypoint for the EBV Knowledge System."""
-
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -8,7 +6,6 @@ if os.getenv("HF_TOKEN"):
     os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN").strip()
 
 from fastapi import FastAPI
-
 from fastapi.staticfiles import StaticFiles
 from app.api.routes import router as api_router
 from app.api.hypothesis_routes import router as hypothesis_router
@@ -21,14 +18,16 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Register API routers
+app.include_router(api_router, prefix="/api")
+app.include_router(hypothesis_router, prefix="/api")
+app.include_router(health_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
+
 app.include_router(api_router)
 app.include_router(hypothesis_router)
 app.include_router(health_router)
 app.include_router(auth_router)
 
-
-# Mount app/static directory at root / to serve the frontend dashboard
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
